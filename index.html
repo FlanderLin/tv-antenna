@@ -3,7 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>數位電視發射站收訊查詢</title>
+<title>數位電視天線方向查詢｜輸入地址找最近發射站與收訊</title>
+<meta name="description" content="免費的數位電視天線方向查詢工具：輸入地址，馬上查出附近可接收的數位電視發射站，顯示方位角、距離，並用地形剖面與第一菲涅耳區判斷收訊好壞，藍色最好、綠色第二、紅色較差。涵蓋台灣 101 個發射站。">
+<meta name="keywords" content="數位電視天線方向,數位電視發射站,電視發射台位置,數位電視收訊查詢,天線朝向,台灣數位電視,收訊不良">
+<link rel="canonical" href="https://flanderlin.github.io/tv-antenna/">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:site_name" content="數位電視天線方向查詢">
+<meta property="og:title" content="數位電視天線方向查詢｜輸入地址找最近發射站與收訊">
+<meta property="og:description" content="輸入地址，查出附近可接收的數位電視發射站、方位角與距離，並用地形剖面判斷收訊好壞。">
+<meta property="og:url" content="https://flanderlin.github.io/tv-antenna/">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"數位電視天線方向查詢","url":"https://flanderlin.github.io/tv-antenna/","inLanguage":"zh-TW","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","description":"輸入地址，查出附近可接收的數位電視發射站、方位角與距離，並用地形剖面與第一菲涅耳區判斷收訊好壞。","offers":{"@type":"Offer","price":"0","priceCurrency":"TWD"}}</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231d5fd6'/%3E%3Cpath d='M32 24v28M22 52h20' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='32' cy='20' r='5' fill='white'/%3E%3Cg stroke='white' stroke-width='4' stroke-linecap='round' fill='none'%3E%3Cpath d='M23 11a13 13 0 0 0 0 18M41 11a13 13 0 0 1 0 18'/%3E%3Cpath d='M16 5a22 22 0 0 0 0 30M48 5a22 22 0 0 1 0 30' opacity='.7'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 <style>
@@ -61,7 +72,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>📡 數位電視發射站收訊查詢</h1>
+  <h1>📡 數位電視天線方向查詢｜發射站收訊查詢</h1>
 
   <div class="card">
     <div class="row">
@@ -100,6 +111,20 @@
   </div>
 
   <div id="cards"></div>
+
+  <section class="card" id="faq">
+    <h2 style="font-size:17px;margin:0 0 8px">使用說明與常見問題</h2>
+    <h3 style="font-size:15px;margin:12px 0 2px">數位電視天線要朝哪個方向？</h3>
+    <p class="small">輸入你家的地址，這個工具會列出附近可接收的數位電視發射站，並標示每一站的「方位角」與「距離」。天線通常朝向收訊最好（藍色）的那一站，方位角以正北為 0°、順時針計算。用手機指南針對方向時，指南針指的是磁北，台灣磁偏角約 4.5°W，所以實際對準的角度約等於正北方位角減 4.5°。</p>
+    <h3 style="font-size:15px;margin:12px 0 2px">藍色、綠色、紅色的線代表什麼？</h3>
+    <p class="small">從你的位置畫到各發射站的線：藍色表示估計收訊最好，綠色是第二，紅色表示收訊較差（接近能接收的邊緣）。完全接收不到的站不會顯示。</p>
+    <h3 style="font-size:15px;margin:12px 0 2px">下面的剖面圖怎麼看？</h3>
+    <p class="small">每個站一張圖，左邊是發射站，右邊是你的位置，灰色是中間的地形，藍線是電波直線路徑，橘色橢圓是「第一菲涅耳區」。如果灰色地形碰到或擋住橘色橢圓，代表中間有山或高地阻隔，收訊會變差。</p>
+    <h3 style="font-size:15px;margin:12px 0 2px">數位電視收訊不好可以怎麼辦？</h3>
+    <p class="small">可以先在地圖上拖曳紅點，比較不同位置（例如樓頂與窗邊）的結果；調整「進階參數」裡的天線高度，看架高天線有沒有幫助；也可以換朝向另一個藍色或綠色的發射站。實際收訊還會受到建物、樹木與天氣影響，仍以現場測試為準。</p>
+    <h3 style="font-size:15px;margin:12px 0 2px">資料準確嗎？涵蓋哪裡？</h3>
+    <p class="small">涵蓋台灣本島與離島共 101 個數位電視發射站，座標來自 Google My Maps「數位電視發射台位置」。各站實際的發射功率與天線高度沒有公開資料，這裡先用相同的假設值估算，結果僅供架設天線時參考。</p>
+  </section>
 
   <footer>
     發射站座標來自 Google My Maps「數位電視發射台位置」（共 101 站，僅含站名與座標）。收訊判斷採自由空間損耗＋地形單刃繞射估算（約 600 MHz、含地球曲率 k=4/3、第一菲涅耳區），未計入建物、樹木與多路徑，僅供架設參考，實際收訊請以現場為準。
@@ -167,6 +192,7 @@
     if(!$('poiOn').checked || z<15){ poiSeq++; poiLayer.clearLayers(); poiBox=null; return; }
     const tier=z>=17?2:1, vb=map.getBounds();
     if(poiBox && poiTier>=tier && poiBox.contains(vb)) return;
+    if(vb.getEast()-vb.getWest()<1e-5 || vb.getNorth()-vb.getSouth()<1e-5){ map.invalidateSize(); poiTimer=setTimeout(loadPois,1500); return; }   // 地圖尚未有尺寸（範圍為 0）就先不查，避免送出無效範圍
     const b=vb.pad(0.2), vbx=[b.getWest(),b.getNorth(),b.getEast(),b.getSouth()].map(x=>x.toFixed(5)).join(',');
     const my=++poiSeq, seen=new Set(); poiLayer.clearLayers();
     for(const t of POI_TERMS.filter(t=>t.tier<=tier)){
