@@ -52,6 +52,10 @@
   .legend{position:absolute;z-index:1000;left:10px;bottom:26px;background:rgba(255,255,255,.95);padding:7px 10px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,.35);font-size:12.5px;line-height:1.7}
   .legend i{display:inline-block;width:22px;height:4px;border-radius:2px;vertical-align:middle;margin-right:6px}
   .poibtn{position:absolute;z-index:1000;top:10px;right:56px;background:#fff;padding:7px 10px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,.35);font-size:13px;display:flex;gap:6px;align-items:center}
+  .pinbtn{position:absolute;z-index:1000;top:52px;right:56px;max-width:calc(100% - 70px);background:#fff;color:#1c2430;padding:7px 11px;border:0;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,.35);font-size:13px;font-weight:600}
+  .pinbtn.on{background:#e8f6ec;color:#16803c}
+  .pinbtn:not(.on){background:#fff3e0;color:#b54708}
+  .pinbtn[hidden]{display:none}
   .me-pin{width:18px;height:18px;border-radius:50%;background:#d92d20;border:3px solid #fff;box-shadow:0 0 0 2px #d92d20,0 2px 6px rgba(0,0,0,.4)}
   .poi{position:relative;width:0;height:0}
   .poi .pi{position:absolute;left:-10px;top:-10px;width:20px;height:20px;border-radius:50%;background:#fff;border:1.5px solid #8a94a6;display:grid;place-items:center;font-size:12px;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.35)}
@@ -102,6 +106,7 @@
       <button data-bm="sat">衛星＋地名</button>
     </div>
     <label class="poibtn"><input type="checkbox" id="poiOn" checked> 顯示地標（超商等）</label>
+    <button id="pinBtn" class="pinbtn on" hidden>📌 位置已釘住（點此解除）</button>
     <div class="legend">
       <div><i style="background:var(--best)"></i>藍色：收訊最好</div>
       <div><i style="background:var(--good)"></i>綠色：收訊第二</div>
@@ -219,7 +224,15 @@
   $('poiOn').onchange=()=>{ if(!$('poiOn').checked){ poiLayer.clearLayers(); poiBox=null; } else loadPois(); };
 
   // ---------- state ----------
-  let me=null, meMarker=null, cands=[], run=0;
+  let me=null, meMarker=null, cands=[], run=0, locked=false;
+  // 位置釘住：查詢到位置後就固定，平移、縮放、點擊地圖都不會改變它；要換位置先按「解除」
+  function setLock(v){
+    locked=v; const b=$('pinBtn');
+    b.hidden=!me; b.classList.toggle('on',v);
+    b.textContent=v?'📌 位置已釘住（點此解除）':'🔓 請點地圖或拖曳紅點選新位置';
+    if(meMarker){ v?meMarker.dragging.disable():meMarker.dragging.enable(); meMarker.setTooltipContent(v?'查詢位置（已釘住）':'拖曳我到新位置'); }
+  }
+  $('pinBtn').onclick=()=>{ setLock(!locked); if(!locked){ $('msg').className='msg'; $('msg').textContent='已解除釘住：請點地圖或拖曳紅點選新位置（選好後會自動再釘住）。'; } };
 
   function setMe(lat,lon,zoomTo){
     me={lat,lon};
@@ -231,6 +244,7 @@
       meMarker.on('dragend',()=>{const p=meMarker.getLatLng(); $('cands').innerHTML=''; $('msg').className='msg'; $('msg').textContent='已依新位置重新分析。'; setMe(p.lat,p.lng,false);});
     } else meMarker.setLatLng([lat,lon]);
     if(zoomTo) map.setView([lat,lon],16);
+    setLock(true);
     analyzeAll();
   }
 
@@ -419,7 +433,7 @@
     navigator.geolocation.getCurrentPosition(p=>{$('msg').textContent='已使用目前位置。'; setMe(p.coords.latitude,p.coords.longitude,true);},
       ()=>{$('msg').className='msg err'; $('msg').textContent='無法取得定位（可能未授權），請輸入地址或點選地圖。';},{enableHighAccuracy:true,timeout:10000});
   };
-  map.on('click',e=>{ $('cands').innerHTML=''; $('msg').className='msg'; $('msg').textContent='已使用地圖上點選的位置。'; setMe(e.latlng.lat,e.latlng.lng,false); });
+  map.on('click',e=>{ if(me&&locked) return; $('cands').innerHTML=''; $('msg').className='msg'; $('msg').textContent='已使用地圖上點選的位置。'; setMe(e.latlng.lat,e.latlng.lng,false); });
 
   // ---------- init ----------
   let start=null;
