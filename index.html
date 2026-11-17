@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>數位電視發射站收訊查詢</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<style>
+  :root{ --bg:#f4f6f9; --card:#fff; --ink:#1c2430; --muted:#667085; --line:#e3e7ee; --accent:#1d5fd6;
+         --best:#0b3cff; --good:#14c814; --poor:#ee1c1c; }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Noto Sans TC","Microsoft JhengHei",sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:14px 16px 40px}
+  h1{font-size:20px;margin:6px 0 10px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  input[type=text],input[type=number]{padding:9px 10px;border:1px solid #c9d0db;border-radius:8px;font:inherit;min-width:0}
+  #q{flex:1;min-width:200px}
+  button{font:inherit;padding:9px 14px;border:1px solid #c9d0db;background:#fff;border-radius:8px;cursor:pointer}
+  button:hover{border-color:var(--accent)}
+  button.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+  .msg{font-size:13px;color:var(--muted);margin-top:8px}
+  .msg.err{color:#d92d20}
+  #cands{list-style:none;margin:6px 0 0;padding:0}
+  #cands li{padding:8px 10px;border:1px solid var(--line);border-radius:8px;margin-top:4px;cursor:pointer;font-size:13.5px}
+  #cands li:hover{background:#eef4ff;border-color:var(--accent)}
+  details{margin-top:10px;font-size:13.5px}
+  summary{cursor:pointer;color:var(--accent)}
+  .params{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin:8px 0}
+  .params label{display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:var(--muted)}
+  .small{font-size:12px;color:var(--muted);line-height:1.6}
+  #banner{font-weight:700;color:#5b1a8c;font-size:18px;margin:4px 0 8px}
+  #summary{font-size:13.5px;color:var(--muted);margin-bottom:8px}
+  .maprel{position:relative}
+  #map{height:min(72vh,680px);min-height:400px;border-radius:10px;border:1px solid var(--line)}
+  .basemaps{position:absolute;z-index:1000;top:10px;left:58px;display:flex;gap:2px;background:#fff;padding:3px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,.35)}
+  .basemaps{flex-wrap:wrap;max-width:calc(100% - 70px)}
+  .basemaps button{border:0;padding:7px 12px;border-radius:6px;background:transparent;font-weight:600}
+  .basemaps button.on{background:#e8effd;color:var(--accent)}
+  .legend{position:absolute;z-index:1000;left:10px;bottom:26px;background:rgba(255,255,255,.95);padding:7px 10px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,.35);font-size:12.5px;line-height:1.7}
+  .legend i{display:inline-block;width:22px;height:4px;border-radius:2px;vertical-align:middle;margin-right:6px}
+  .poibtn{position:absolute;z-index:1000;top:10px;right:56px;background:#fff;padding:7px 10px;border-radius:8px;box-shadow:0 1px 5px rgba(0,0,0,.35);font-size:13px;display:flex;gap:6px;align-items:center}
+  .me-pin{width:18px;height:18px;border-radius:50%;background:#d92d20;border:3px solid #fff;box-shadow:0 0 0 2px #d92d20,0 2px 6px rgba(0,0,0,.4)}
+  .poi{position:relative;width:0;height:0}
+  .poi .pi{position:absolute;left:-10px;top:-10px;width:20px;height:20px;border-radius:50%;background:#fff;border:1.5px solid #8a94a6;display:grid;place-items:center;font-size:12px;line-height:1;box-shadow:0 1px 3px rgba(0,0,0,.35)}
+  .poi .pn{position:absolute;left:12px;top:-8px;white-space:nowrap;font:600 11.5px/1.2 system-ui,"Noto Sans TC",sans-serif;color:#222;text-shadow:0 0 3px #fff,0 0 3px #fff,0 0 3px #fff,0 0 2px #fff;display:none}
+  .z16 .poi .pn{display:block}
+  .stn-tip{font-weight:600}
+  .scard .ttl{display:flex;gap:8px;flex-wrap:wrap;align-items:baseline;font-size:17px;margin-bottom:4px}
+  .scard .ttl b{font-size:18px}
+  .chip{font-size:12px;font-weight:700;color:#fff;border-radius:999px;padding:2px 9px}
+  .chip.best{background:var(--best)} .chip.good{background:var(--good)} .chip.poor{background:var(--poor)}
+  .scard .note{color:#0b3cff;font-weight:700;font-size:14.5px;margin:2px 0 8px}
+  .scard canvas{width:100%;height:210px;display:block;border:1px solid var(--line);border-radius:6px;background:#fff}
+  .scard .meta{font-size:12.5px;color:var(--muted);margin-top:6px}
+  .scard .acts{margin-top:8px}
+  .scard.hl{box-shadow:0 0 0 2px var(--accent) inset}
+  footer{font-size:12px;color:var(--muted);line-height:1.7;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📡 數位電視發射站收訊查詢</h1>
+
+  <div class="card">
+    <div class="row">
+      <input id="q" type="text" placeholder="輸入地址或地標，例如：台北市中正區忠孝東路一段 1 號" autocomplete="off">
+      <button id="go" class="pri">查詢</button>
+      <button id="loc">📍 使用我的位置</button>
+    </div>
+    <ul id="cands"></ul>
+    <div id="msg" class="msg">輸入地址後，會自動找出附近「可以接收」的發射站；也可以直接在地圖上點一下指定位置，或拖曳紅點微調。</div>
+    <details>
+      <summary>進階參數（影響收訊判斷）</summary>
+      <div class="params">
+        <label>假設各站發射功率（W）<input id="pErp" type="number" value="800" min="1" step="50"></label>
+        <label>接收天線增益（dBi）<input id="pG" type="number" value="10" step="1"></label>
+        <label>接收天線離地高度（m）<input id="pRx" type="number" value="8" min="0" step="1"></label>
+        <label>發射天線離地高度假設（m）<input id="pTx" type="number" value="30" min="0" step="5"></label>
+      </div>
+      <div class="small">目前沒有各發射站的實際功率與天線高度資料，所以全部站台先用相同的假設值估算（預設 800 W）；低功率的小型補隙台，實際涵蓋會比這裡的估算小。改了數值會立刻重新判斷。</div>
+    </details>
+  </div>
+
+  <div id="banner" hidden></div>
+  <div id="summary"></div>
+  <div class="maprel card" style="padding:8px">
+    <div class="basemaps">
+      <button class="on" data-bm="street">電子地圖</button>
+      <button data-bm="sat">衛星＋地名</button>
+    </div>
+    <label class="poibtn"><input type="checkbox" id="poiOn" checked> 顯示地標（超商等）</label>
+    <div class="legend">
+      <div><i style="background:var(--best)"></i>藍色：收訊最好</div>
+      <div><i style="background:var(--good)"></i>綠色：收訊第二</div>
+      <div><i style="background:var(--poor)"></i>紅色：收訊差</div>
+    </div>
+    <div id="map"></div>
+  </div>
+
+  <div id="cards"></div>
+
+  <footer>
+    發射站座標來自 Google My Maps「數位電視發射台位置」（共 101 站，僅含站名與座標）。收訊判斷採自由空間損耗＋地形單刃繞射估算（約 600 MHz、含地球曲率 k=4/3、第一菲涅耳區），未計入建物、樹木與多路徑，僅供架設參考，實際收訊請以現場為準。
+    地形高程：AWS Terrain Tiles；底圖：內政部國土測繪中心（電子地圖）、Esri（衛星）；地標：OpenStreetMap 貢獻者；地址定位：Nominatim。方位角以正北為 0°、順時針；台灣磁偏角約 4.5°W，「磁方位」≈ 正北方位 − 4.5°（近似）。
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="stations.js"></script>
+<script>
+(function(){
+  const R=6371000, K=4/3, FMHZ=600, LAMBDA=299.792458/FMHZ, MAXD=90000;
+  const SENS=-70;      // 含衰落餘裕之所需接收電平（dBm）
+  const LOSS=2;        // 饋線／接頭損耗（dB）
+  const DECL=4.5;
+  const rad=d=>d*Math.PI/180, deg=r=>r*180/Math.PI;
+  const $=id=>document.getElementById(id);
+  const COMPASS=["北","北北東","東北","東北東","東","東南東","東南","南南東","南","南南西","西南","西南西","西","西北西","西北","北北西"];
+  const compass=b=>COMPASS[Math.round(b/22.5)%16];
+  const fmtKm=m=>(m/1000).toFixed(m<10000?2:1);
+  const COL={best:'#0b3cff',good:'#14c814',poor:'#ee1c1c'};
+  const LBL={best:'收訊最好',good:'收訊第二',poor:'收訊差'};
+
+  function dist(a,b){const dLat=rad(b.lat-a.lat),dLon=rad(b.lon-a.lon);const s=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(s));}
+  function bearing(a,b){const y=Math.sin(rad(b.lon-a.lon))*Math.cos(rad(b.lat));const x=Math.cos(rad(a.lat))*Math.sin(rad(b.lat))-Math.sin(rad(a.lat))*Math.cos(rad(b.lat))*Math.cos(rad(b.lon-a.lon));return (deg(Math.atan2(y,x))+360)%360;}
+  const cleanName=n=>/^電視公司主站/.test(n)?n:n.replace(/（.*$/,'');   // 5 個「電視公司主站」同名，保留座標以便區分
+
+  // ---------- map ----------
+  const map=L.map('map',{zoomControl:true}).setView([23.8,121],8);
+  const esri='https://server.arcgisonline.com/ArcGIS/rest/services/';
+  const T=(p,o)=>L.tileLayer(esri+p+'/MapServer/tile/{z}/{y}/{x}',Object.assign({maxZoom:20,maxNativeZoom:19},o||{}));
+  // 內政部國土測繪中心（NLSC）官方通用版電子地圖（免金鑰、開放使用）
+  const NL=(id,o)=>L.tileLayer('https://wmts.nlsc.gov.tw/wmts/'+id+'/default/GoogleMapsCompatible/{z}/{y}/{x}',Object.assign({maxZoom:20,maxNativeZoom:19,attribution:'© 內政部國土測繪中心'},o||{}));
+  const layers={
+    street:L.layerGroup([NL('EMAP')]),
+    sat:L.layerGroup([T('World_Imagery',{attribution:'影像 © Esri, Maxar, Earthstar Geographics'}),T('Reference/World_Boundaries_and_Places'),T('Reference/World_Transportation',{opacity:.9})])
+  };
+  let curBm='street'; layers.street.addTo(map);
+  document.querySelectorAll('[data-bm]').forEach(b=>b.onclick=()=>{
+    map.removeLayer(layers[curBm]); curBm=b.dataset.bm; layers[curBm].addTo(map);
+    document.querySelectorAll('[data-bm]').forEach(x=>x.classList.toggle('on',x===b));
+  });
+  L.control.scale({imperial:false}).addTo(map);
+  const rayLayer=L.layerGroup().addTo(map);
+  const poiLayer=L.layerGroup().addTo(map);
+
+  // ---------- 地標（OpenStreetMap / Overpass） ----------
+  // 用 Nominatim 依關鍵字在目前畫面範圍內找地標（Overpass 太不穩定）；每秒最多 1 次請求
+  const POI_TERMS=[
+    {q:'7-ELEVEN',re:/7[- ]?eleven|統一超商|7-11/i,ic:'🏪',tier:1},
+    {q:'全家',re:/全家|family\s?mart/i,ic:'🏪',tier:1},
+    {q:'萊爾富',re:/萊爾富|hi-?life/i,ic:'🏪',tier:1},
+    {q:'OK便利商店',re:/^OK|OK\s?mart|OK超商/i,ic:'🏪',tier:1},
+    {q:'全聯',re:/全聯/,ic:'🛒',tier:1},
+    {q:'醫院',re:/醫院|診所|hospital/i,ic:'🏥',tier:2},
+    {q:'學校',re:/學|school/i,ic:'🏫',tier:2},
+    {q:'郵局',re:/郵局|post/i,ic:'📮',tier:2},
+    {q:'加油站',re:/加油|中油|台塑|fuel|gas/i,ic:'⛽',tier:2}
+  ];
+  let poiBox=null, poiTier=0, poiTimer=null, poiSeq=0;
+  const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+  function syncZoomClass(){ map.getContainer().classList.toggle('z16',map.getZoom()>=16); }
+  async function loadPois(){
+    const z=map.getZoom();
+    if(!$('poiOn').checked || z<15){ poiSeq++; poiLayer.clearLayers(); poiBox=null; return; }
+    const tier=z>=17?2:1, vb=map.getBounds();
+    if(poiBox && poiTier>=tier && poiBox.contains(vb)) return;
+    const b=vb.pad(0.2), vbx=[b.getWest(),b.getNorth(),b.getEast(),b.getSouth()].map(x=>x.toFixed(5)).join(',');
+    const my=++poiSeq, seen=new Set(); poiLayer.clearLayers();
+    for(const t of POI_TERMS.filter(t=>t.tier<=tier)){
+      if(my!==poiSeq) return;
+      try{
+        const u='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=40&accept-language=zh-TW&bounded=1&viewbox='+vbx+'&q='+encodeURIComponent(t.q);
+        let r=await fetch(u);
+        if(r.status===429){ await sleep(4000); if(my!==poiSeq) return; r=await fetch(u); }   // 被限流就稍等再試一次
+        const j=await r.json();
+        if(my!==poiSeq) return;
+        j.forEach(x=>{
+          const name=x.name||''; if(!t.re.test(name)||seen.has(x.place_id)) return; seen.add(x.place_id);
+          L.marker([+x.lat,+x.lon],{icon:L.divIcon({className:'',iconSize:[0,0],html:'<div class="poi"><div class="pi">'+t.ic+'</div><div class="pn"></div></div>'}),keyboard:false,zIndexOffset:-100})
+            .on('add',function(){ const n=this.getElement().querySelector('.pn'); if(n) n.textContent=name; })
+            .bindTooltip(name,{direction:'top',offset:[0,-10]}).addTo(poiLayer);
+        });
+      }catch(e){ console.warn('POI load failed',t.q,e); }
+      await sleep(1100);
+    }
+    if(my===poiSeq){ poiBox=b; poiTier=tier; }
+  }
+  function schedulePois(){ syncZoomClass(); clearTimeout(poiTimer); poiTimer=setTimeout(loadPois,500); }
+  map.on('moveend zoomend',schedulePois); syncZoomClass();
+  $('poiOn').onchange=()=>{ if(!$('poiOn').checked){ poiLayer.clearLayers(); poiBox=null; } else loadPois(); };
+
+  // ---------- state ----------
+  let me=null, meMarker=null, cands=[], run=0;
+
+  function setMe(lat,lon,zoomTo){
+    me={lat,lon};
+    try{localStorage.setItem('tvant-last',JSON.stringify(me));}catch(e){}
+    try{history.replaceState(null,'','#'+lat.toFixed(6)+','+lon.toFixed(6));}catch(e){}
+    if(!meMarker){
+      meMarker=L.marker([lat,lon],{draggable:true,zIndexOffset:1000,icon:L.divIcon({className:'',html:'<div class="me-pin"></div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(map);
+      meMarker.bindTooltip('查詢位置（可拖曳）');
+      meMarker.on('dragend',()=>{const p=meMarker.getLatLng(); $('cands').innerHTML=''; $('msg').className='msg'; $('msg').textContent='已依新位置重新分析。'; setMe(p.lat,p.lng,false);});
+    } else meMarker.setLatLng([lat,lon]);
+    if(zoomTo) map.setView([lat,lon],16);
+    analyzeAll();
+  }
+
+  // ---------- terrain (AWS Terrarium) ----------
+  const tileCache={};
+  function tileXY(lat,lon,z){const n=2**z,x=(lon+180)/360*n,s=Math.sin(rad(lat));return {x,y:(0.5-Math.log((1+s)/(1-s))/(4*Math.PI))*n};}
+  function loadTile(z,x,y){
+    const k=z+'/'+x+'/'+y;
+    if(!tileCache[k]) tileCache[k]=new Promise((res,rej)=>{
+      const img=new Image(); img.crossOrigin='anonymous';
+      const t=setTimeout(()=>{delete tileCache[k];rej(new Error('timeout'));},20000);
+      img.onload=()=>{clearTimeout(t);const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0);res(g.getImageData(0,0,256,256).data);};
+      img.onerror=()=>{clearTimeout(t);delete tileCache[k];rej(new Error('tile'));};
+      img.src='https://s3.amazonaws.com/elevation-tiles-prod/terrarium/'+k+'.png';
+    });
+    return tileCache[k];
+  }
+  async function getElevations(lats,lons){
+    let z=12,set;
+    for(;z>=8;z--){ set=new Set(lats.map((a,i)=>{const p=tileXY(a,lons[i],z);return Math.floor(p.x)+'/'+Math.floor(p.y);})); if(set.size<=12) break; }
+    const tiles={};
+    await Promise.all([...set].map(async k=>{const [x,y]=k.split('/');tiles[k]=await loadTile(z,x,y);}));
+    return lats.map((a,i)=>{const p=tileXY(a,lons[i],z),tx=Math.floor(p.x),ty=Math.floor(p.y);
+      const px=Math.min(255,Math.floor((p.x-tx)*256)),py=Math.min(255,Math.floor((p.y-ty)*256));
+      const d=tiles[tx+'/'+ty],o=(py*256+px)*4; return d[o]*256+d[o+1]+d[o+2]/256-32768;});
+  }
+  const elevCache={};
+  async function stationElev(s){
+    const N=s.d<4000?40:100, key=s.lat+','+s.lon+'|'+me.lat.toFixed(5)+','+me.lon.toFixed(5);
+    if(elevCache[key]) return elevCache[key];
+    const lats=[],lons=[];
+    for(let i=0;i<=N;i++){const t=i/N; lats.push(s.lat+(me.lat-s.lat)*t); lons.push(s.lon+(me.lon-s.lon)*t);} // 由發射站 → 查詢位置
+    return elevCache[key]=await getElevations(lats,lons);
+  }
+  async function pool(items,n,fn){let i=0; await Promise.all(Array.from({length:n},async()=>{while(i<items.length){const k=i++; await fn(items[k],k);}}));}
+
+  // ---------- 收訊估算 ----------
+  function params(){
+    return {erp:Math.max(1,+$('pErp').value||800), G:+$('pG').value||0, hRx:Math.max(0,+$('pRx').value||0), hTx:Math.max(0,+$('pTx').value||0)};
+  }
+  function analyze(s,p){
+    const D=s.d; let Ld=0, vmax=-9, minClear=Infinity, worst=Infinity, pts=null;
+    if(s.el){
+      const N=s.el.length-1; pts=[];
+      const y0=s.el[0]+p.hTx, y1=s.el[N]+p.hRx;
+      for(let i=0;i<=N;i++){
+        const d1=D*i/N, d2=D-d1, terr=s.el[i]+d1*d2/(2*K*R), los=y0+(y1-y0)*i/N;
+        const f1=(i===0||i===N)?0:Math.sqrt(LAMBDA*d1*d2/D);
+        pts.push({d:d1,terr,los,f1});
+        if(i>0&&i<N){
+          const h=terr-los, v=h*Math.sqrt(2*D/(LAMBDA*d1*d2));
+          if(v>vmax) vmax=v; if(-h<minClear) minClear=-h; worst=Math.min(worst,(-h)/f1);
+        }
+      }
+      if(vmax>-0.78){ const a=vmax-0.1; Ld=6.9+20*Math.log10(Math.sqrt(a*a+1)+a); }
+    }
+    const fspl=32.45+20*Math.log10(D/1000)+20*Math.log10(FMHZ);
+    const pr=10*Math.log10(p.erp*1000)+p.G-LOSS-fspl-Ld, margin=pr-SENS;
+    const cls=margin>=20?'best':margin>=8?'good':'poor';
+    return {pts,Ld,pr,margin,cls,ok:margin>=0,minClear,worst,fspl};
+  }
+
+  // ---------- main flow ----------
+  async function analyzeAll(){
+    const my=++run;
+    $('cards').innerHTML=''; rayLayer.clearLayers(); $('banner').hidden=true;
+    const list=STATIONS.map(s=>({...s,d:dist(me,s),b:bearing(me,s)})).filter(s=>s.d<=MAXD).sort((a,b)=>a.d-b.d);
+    cands=list;
+    if(!list.length){ $('summary').textContent='這個位置 '+(MAXD/1000)+' 公里內沒有任何發射站。'; return; }
+    let done=0; $('summary').textContent='正在分析 '+list.length+' 個發射站的地形路徑…（0/'+list.length+'）';
+    await pool(list,4,async s=>{
+      try{ s.el=await stationElev(s); }catch(e){ s.el=null; }
+      done++; if(my===run) $('summary').textContent='正在分析 '+list.length+' 個發射站的地形路徑…（'+done+'/'+list.length+'）';
+    });
+    if(my!==run) return;
+    renderResults();
+  }
+
+  let profiles=[];
+  function renderResults(){
+    const p=params();
+    cands.forEach(s=>Object.assign(s,{a:analyze(s,p)}));
+    const ok=cands.filter(s=>s.a.ok).sort((a,b)=>b.a.margin-a.a.margin);
+    const hidden=cands.length-ok.length;
+    rayLayer.clearLayers(); $('cards').innerHTML=''; profiles=[];
+    const n={best:0,good:0,poor:0}; ok.forEach(s=>n[s.a.cls]++);
+    $('banner').hidden=false;
+    $('banner').textContent=ok.length?'已完成發射站方位(含路徑剖面圖)查詢，請往下滑觀看詳細結果':'這個位置附近沒有判斷為可接收的發射站';
+    $('summary').textContent='共 '+ok.length+' 個可接收的發射站（藍 '+n.best+'／綠 '+n.good+'／紅 '+n.poor+'）'+(hidden?'；另有 '+hidden+' 個站在 '+(MAXD/1000)+' 公里內但判斷接收不到，已隱藏。':'。');
+    // 紅 → 綠 → 藍，藍色畫在最上層
+    ['poor','good','best'].forEach(cls=>ok.filter(s=>s.a.cls===cls).forEach(s=>{
+      const c=COL[cls];
+      const ln=L.polyline([[me.lat,me.lon],[s.lat,s.lon]],{color:c,weight:3,opacity:.95,bubblingMouseEvents:false}).addTo(rayLayer);
+      ln.bindTooltip(cleanName(s.n)+'　'+fmtKm(s.d)+' 公里　'+s.b.toFixed(0)+'°',{sticky:true});
+      ln.on('click',()=>{const el=$('st-'+s.id); if(el){el.scrollIntoView({behavior:'smooth',block:'start'}); flash(el);}});
+      L.circleMarker([s.lat,s.lon],{radius:5,color:'#fff',weight:2,fillColor:c,fillOpacity:1,bubblingMouseEvents:false}).bindTooltip(cleanName(s.n)).addTo(rayLayer);
+      s.ln=ln;
+    }));
+    ok.forEach((s,i)=>{
+      s.id=STATIONS.indexOf(STATIONS.find(x=>x.n===s.n));
+      const el=document.createElement('div'); el.className='card scard'; el.id='st-'+s.id;
+      const a=s.a;
+      el.innerHTML='<div class="ttl"><span class="chip '+a.cls+'">'+LBL[a.cls]+'</span><b></b><span class="sub"></span></div>'+
+        '<div class="note"></div><canvas></canvas><div class="meta"></div><div class="acts"><button>🗺 在地圖上看這一條</button></div>';
+      el.querySelector('b').textContent=cleanName(s.n);
+      el.querySelector('.sub').textContent='(距離約 '+fmtKm(s.d)+' 公里／方位角約 '+s.b.toFixed(0)+' 度，'+compass(s.b)+'方)';
+      el.querySelector('.note').textContent='左邊是'+cleanName(s.n)+'，右邊為查詢地點，可觀察中間電波第一菲涅耳區( first fresnel zone )是否有地形阻隔。';
+      let v='';
+      if(!a.pts) v='（地形資料載入失敗，這一站未計入地形阻擋）';
+      else if(a.minClear<0) v='視線被地形擋住（最大約阻擋 '+(-a.minClear).toFixed(0)+' m），繞射損耗約 '+a.Ld.toFixed(0)+' dB。';
+      else if(a.worst<0.6) v='視線通透，但第一菲涅耳區有被地形遮蔽（約 '+(a.worst*100).toFixed(0)+'% 淨空）。';
+      else v='地形通視良好，第一菲涅耳區沒有被阻隔。';
+      el.querySelector('.meta').innerHTML=v+'<br>估計收訊餘裕 <b>'+(a.margin>=0?'+':'')+a.margin.toFixed(0)+' dB</b>（估計接收電平 '+a.pr.toFixed(0)+' dBm）；磁方位（指南針）約 '+((s.b-DECL+360)%360).toFixed(0)+'°。';
+      el.querySelector('button').onclick=()=>{ map.fitBounds([[me.lat,me.lon],[s.lat,s.lon]],{padding:[50,50],maxZoom:16}); document.querySelector('.maprel').scrollIntoView({behavior:'smooth',block:'start'}); s.ln&&s.ln.setStyle({weight:7}); setTimeout(()=>s.ln&&s.ln.setStyle({weight:3}),2500); };
+      $('cards').appendChild(el);
+      profiles.push({cv:el.querySelector('canvas'),a,D:s.d});
+    });
+    requestAnimationFrame(()=>profiles.forEach(f=>drawProfile(f.cv,f.a,f.D)));
+  }
+  function flash(el){el.classList.add('hl');setTimeout(()=>el.classList.remove('hl'),1800);}
+  let rsz; window.addEventListener('resize',()=>{clearTimeout(rsz);rsz=setTimeout(()=>profiles.forEach(f=>drawProfile(f.cv,f.a,f.D)),150);});
+  let ptm; ['pErp','pG','pRx','pTx'].forEach(id=>$(id).oninput=()=>{ if(!cands.length||cands.some(s=>s.el===undefined)) return; clearTimeout(ptm); ptm=setTimeout(renderResults,250); });
+
+  // ---------- 剖面圖 ----------
+  function niceStep(span,maxTicks){const c=[1,2,5,10,20,25,50,100,200,250,500,1000]; return c.find(s=>span/s<=maxTicks)||1000;}
+  function drawProfile(cv,a,D){
+    const dpr=window.devicePixelRatio||1, W=cv.clientWidth, H=cv.clientHeight; if(!W) return;
+    cv.width=W*dpr; cv.height=H*dpr;
+    const g=cv.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0); g.clearRect(0,0,W,H); g.font='11px system-ui,sans-serif';
+    const pts=a.pts;
+    if(!pts){ g.fillStyle='#667085'; g.textAlign='center'; g.fillText('無法取得地形資料',W/2,H/2); return; }
+    const padL=44,padR=10,padT=10,padB=22,w=W-padL-padR,h=H-padT-padB;
+    let lo=Infinity,hi=-Infinity;
+    pts.forEach(q=>{lo=Math.min(lo,q.terr,q.los-q.f1);hi=Math.max(hi,q.terr,q.los+q.f1);});
+    lo=Math.min(0,lo); const st=niceStep(hi-lo,4); lo=Math.floor(lo/st)*st; hi=Math.ceil(hi/st)*st;
+    const X=d=>padL+d/D*w, Y=v=>padT+h-(v-lo)/(hi-lo)*h;
+    g.strokeStyle='#9aa3b2'; g.fillStyle='#667085'; g.lineWidth=1; g.textAlign='right'; g.setLineDash([2,3]);
+    for(let v=lo;v<=hi+1e-6;v+=st){ const y=Y(v); g.beginPath(); g.moveTo(padL,y); g.lineTo(W-padR,y); g.stroke(); g.fillText(v+' m',padL-5,y+3.5); }
+    g.setLineDash([]); g.textAlign='center';
+    const kmStep=niceStep(D/1000,8)*1000;
+    for(let d=0;d<=D+1;d+=kmStep){ g.fillText(Math.round(d/1000)+' km',X(d),H-6); }
+    // 地形
+    g.beginPath(); g.moveTo(X(0),Y(lo)); pts.forEach(q=>g.lineTo(X(q.d),Y(q.terr))); g.lineTo(X(D),Y(lo)); g.closePath(); g.fillStyle='rgba(120,130,145,.35)'; g.fill();
+    g.beginPath(); pts.forEach((q,i)=>i?g.lineTo(X(q.d),Y(q.terr)):g.moveTo(X(q.d),Y(q.terr))); g.strokeStyle='#222'; g.lineWidth=1; g.stroke();
+    // 第一菲涅耳區（橘色橢圓）
+    g.strokeStyle='#f59e0b'; g.lineWidth=1.3;
+    g.beginPath(); pts.forEach((q,i)=>i?g.lineTo(X(q.d),Y(q.los+q.f1)):g.moveTo(X(q.d),Y(q.los+q.f1))); g.stroke();
+    g.beginPath(); pts.forEach((q,i)=>i?g.lineTo(X(q.d),Y(q.los-q.f1)):g.moveTo(X(q.d),Y(q.los-q.f1))); g.stroke();
+    // 視線（藍）
+    g.strokeStyle='#1f3fff'; g.lineWidth=1.6; g.beginPath(); g.moveTo(X(0),Y(pts[0].los)); g.lineTo(X(D),Y(pts[pts.length-1].los)); g.stroke();
+  }
+
+  // ---------- 地址查詢 ----------
+  async function search(){
+    const q=$('q').value.trim(); if(!q) return;
+    const msg=$('msg'); msg.className='msg'; msg.textContent='搜尋中…'; $('cands').innerHTML='';
+    try{
+      // 門牌在 OpenStreetMap 常常沒有收錄：找不到時，依序拿掉樓層、門牌號、巷弄再試，定位到最接近的路段
+      const variants=[q];
+      const v1=q.replace(/\s+/g,'').replace(/(\d+|[一二三四五六七八九十]+)\s*(樓|F|f)(之\d+)?.*$/,'');
+      const v2=v1.replace(/\d+(之\d+)?號.*$/,'');
+      const v3=v2.replace(/\d+弄.*$/,'').replace(/\d+巷.*$/,'');
+      [v1,v2,v3].forEach(v=>{ if(v && !variants.includes(v)) variants.push(v); });
+      let j=[], used=q;
+      for(let i=0;i<variants.length;i++){
+        const url='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&countrycodes=tw&accept-language=zh-TW&q='+encodeURIComponent(variants[i]);
+        let r=await fetch(url);
+        if(r.status===429){ await sleep(3000); r=await fetch(url); }
+        j=await r.json(); used=variants[i];
+        if(j.length) break;
+        if(i<variants.length-1) await sleep(1100);
+      }
+      if(!j.length){ msg.className='msg err'; msg.textContent='找不到這個地址。可以簡化一下（例如只輸入「路名＋巷」或「里／村名」），或直接在地圖上點選位置。'; return; }
+      if(used!==q) msg.textContent='找不到完整門牌，已改用「'+used+'」附近定位（可拖曳紅點微調）。';
+      if(j.length===1){ pick(j[0], used!==q); return; }
+      msg.textContent='找到多個結果，請選擇：';
+      j.forEach(x=>{const li=document.createElement('li'); li.textContent=x.display_name; li.onclick=()=>pick(x); $('cands').appendChild(li);});
+    }catch(e){ msg.className='msg err'; msg.textContent='地址查詢失敗（網路或服務問題），請改用地圖點選位置。'; }
+  }
+  function pick(x,approx){ $('cands').innerHTML=''; $('msg').className='msg'; $('msg').textContent=(approx?'找不到完整門牌，已定位到最接近的：':'定位：')+x.display_name+'（若位置略有偏差，可拖曳紅點微調）'; setMe(+x.lat,+x.lon,true); }
+  $('go').onclick=search;
+  $('q').addEventListener('keydown',e=>{if(e.key==='Enter') search();});
+  $('loc').onclick=()=>{
+    if(!navigator.geolocation){ $('msg').className='msg err'; $('msg').textContent='此瀏覽器不支援定位。'; return; }
+    $('msg').className='msg'; $('msg').textContent='取得定位中…';
+    navigator.geolocation.getCurrentPosition(p=>{$('msg').textContent='已使用目前位置。'; setMe(p.coords.latitude,p.coords.longitude,true);},
+      ()=>{$('msg').className='msg err'; $('msg').textContent='無法取得定位（可能未授權），請輸入地址或點選地圖。';},{enableHighAccuracy:true,timeout:10000});
+  };
+  map.on('click',e=>{ $('cands').innerHTML=''; $('msg').className='msg'; $('msg').textContent='已使用地圖上點選的位置。'; setMe(e.latlng.lat,e.latlng.lng,false); });
+
+  // ---------- init ----------
+  let start=null;
+  const m=location.hash.match(/^#(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
+  if(m) start={lat:+m[1],lon:+m[2]};
+  else { try{ start=JSON.parse(localStorage.getItem('tvant-last')||'null'); }catch(e){} }
+  if(start&&isFinite(start.lat)&&isFinite(start.lon)) setMe(start.lat,start.lon,true);
+  else map.fitBounds([[21.8,119.9],[25.4,122.1]]);
+})();
+</script>
+</body>
+</html>
