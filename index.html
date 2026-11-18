@@ -367,6 +367,8 @@
       // 發射功率與直接波場強引自參考網站資料；沒有資料的站顯示「查無資料」，不自行推測
       el.querySelector('.sub').textContent='（'+(s.pw?'發射功率 '+s.pw+' W':'發射功率：查無資料')+'，距離約 '+(s.d/1000).toFixed(1)+' 公里／方位角約 '+s.b.toFixed(0)+' 度（'+compass(s.b)+'方）'+(s.erp?'／直接波場強約 '+directDbuv(s.erp,s.d/1000)+' dBuV':'')+'）';
       el.querySelector('.note').textContent='左邊是'+cleanName(s.n)+'，右邊為查詢地點，可觀察中間電波第一菲涅耳區( first fresnel zone )是否有地形阻隔。';
+      el.querySelector('.note').style.color={best:'#0b3cff',good:'#0b8a0b',poor:'#d01414'}[a.cls];   // 說明文字與卡片左邊框也跟著等級變色
+      el.style.borderLeft='6px solid '+COL[a.cls];
       let v='';
       if(!a.pts) v='（地形資料載入失敗，這一站未計入地形阻擋）';
       else if(a.minClear<0) v='視線被地形擋住（最大約阻擋 '+(-a.minClear).toFixed(0)+' m），繞射損耗約 '+a.Ld.toFixed(0)+' dB。';
@@ -413,7 +415,9 @@
     g.beginPath(); pts.forEach((q,i)=>i?g.lineTo(X(q.d),Y(q.los+q.f1)):g.moveTo(X(q.d),Y(q.los+q.f1))); g.stroke();
     g.beginPath(); pts.forEach((q,i)=>i?g.lineTo(X(q.d),Y(q.los-q.f1)):g.moveTo(X(q.d),Y(q.los-q.f1))); g.stroke();
     // 視線（藍）
-    g.strokeStyle='#1f3fff'; g.lineWidth=1.6; g.beginPath(); g.moveTo(X(0),Y(pts[0].los)); g.lineTo(X(D),Y(pts[pts.length-1].los)); g.stroke();
+    // 視線顏色＝收訊等級（藍／綠／紅），往下捲也能一眼分辨
+    g.strokeStyle=COL[a.cls]||'#1f3fff'; g.lineWidth=2;
+    g.beginPath(); g.moveTo(X(0),Y(pts[0].los)); g.lineTo(X(D),Y(pts[pts.length-1].los)); g.stroke();
   }
 
   // ---------- 地址查詢 ----------
