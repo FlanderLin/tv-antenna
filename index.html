@@ -136,7 +136,7 @@
   </section>
 
   <footer>
-    發射站資料：以國家通訊傳播委員會（NCC）政府資料開放平台「<a href="https://data.gov.tw/dataset/95107" target="_blank" rel="noopener">數位無線電視電臺發射機基本資料</a>」（123 部發射機）為準，整理成 92 個站址；座標取自 Google My Maps「數位電視發射台位置」，少數沒有座標的站（南世、清水、茶山、里佳）以村里中心概略定位。NCC 清單沒有座標、功率與啟用日期。收訊判斷採自由空間損耗＋地形單刃繞射估算（約 600 MHz、含地球曲率 k=4/3、第一菲涅耳區），未計入建物、樹木與多路徑，僅供架設參考，實際收訊請以現場為準。
+    發射站資料：以國家通訊傳播委員會（NCC）政府資料開放平台「<a href="https://data.gov.tw/dataset/95107" target="_blank" rel="noopener">數位無線電視電臺發射機基本資料</a>」（123 部發射機）為準，整理成 92 個站址；座標取自 Google My Maps「數位電視發射台位置」，少數沒有座標的站（南世、清水、茶山、里佳）以村里中心概略定位。NCC 清單沒有座標、功率與啟用日期。座標已與參考網站（dvbt.kennykuo.idv.tw，2024）、OpenStreetMap 及 NCC 登記的行政區交叉比對，其中 49 站有兩個以上來源吻合，7 站標示「座標待確認」，位置可能不準。收訊判斷採自由空間損耗＋地形單刃繞射估算（約 600 MHz、含地球曲率 k=4/3、第一菲涅耳區），未計入建物、樹木與多路徑，僅供架設參考，實際收訊請以現場為準。
     地形高程：AWS Terrain Tiles；底圖：內政部國土測繪中心（電子地圖）、Esri（衛星）；地標：OpenStreetMap 貢獻者；地址定位：Nominatim。方位角以正北為 0°、順時針；台灣磁偏角約 4.5°W，「磁方位」≈ 正北方位 − 4.5°（近似）。
   </footer>
 </div>
@@ -364,7 +364,7 @@
       else if(a.worst<0.6) v='視線通透，但第一菲涅耳區有被地形遮蔽（約 '+(a.worst*100).toFixed(0)+'% 淨空）。';
       else v='地形通視良好，第一菲涅耳區沒有被阻隔。';
       el.querySelector('.meta').innerHTML=v+'<br>估計收訊餘裕 <b>'+(a.margin>=0?'+':'')+a.margin.toFixed(0)+' dB</b>（估計接收電平 '+a.pr.toFixed(0)+' dBm）；磁方位（指南針）約 '+((s.b-DECL+360)%360).toFixed(0)+'°。';
-      el.querySelector('.meta').innerHTML+='<br>站型：'+s.k+(s.x?'；<b>NCC 官方清單未列出此站，但參考網站（2024）有列，是否仍運作請留意</b>':'；NCC 登記：'+s.o+'（'+s.r+' 部發射機）')+(s.ap?'；座標為村里概略位置':'')+'。';
+      el.querySelector('.meta').innerHTML+='<br>站型：'+s.k+(s.x?'；<b>NCC 官方清單未列出此站，但參考網站（2024）有列，是否仍運作請留意</b>':'；NCC 登記：'+s.o+'（'+s.r+' 部發射機）')+(s.ap?'；座標為村里概略位置':'')+(s.c?'；<b>座標待確認：'+s.c+'</b>':'')+'。';
       el.querySelector('button').onclick=()=>{ map.fitBounds([[me.lat,me.lon],[s.lat,s.lon]],{padding:[50,50],maxZoom:16}); document.querySelector('.maprel').scrollIntoView({behavior:'smooth',block:'start'}); s.ln&&s.ln.setStyle({weight:7}); setTimeout(()=>s.ln&&s.ln.setStyle({weight:3}),2500); };
       $('cards').appendChild(el);
       profiles.push({cv:el.querySelector('canvas'),a,D:s.d});
