@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>數位電視天線方向查詢｜輸入地址找最近發射站與收訊</title>
-<meta name="description" content="免費的數位電視天線方向查詢工具：輸入地址，馬上查出附近可接收的數位電視發射站，顯示方位角、距離，並用地形剖面與第一菲涅耳區判斷收訊好壞，藍色最好、綠色第二、紅色較差。涵蓋台灣 101 個發射站。">
+<meta name="description" content="免費的數位電視天線方向查詢工具：輸入地址，馬上查出附近可接收的數位電視發射站，顯示方位角、距離，並用地形剖面與第一菲涅耳區判斷收訊好壞，藍色最好、綠色第二、紅色較差。依 NCC 官方清單整理，涵蓋台灣 92 個發射站址。">
 <meta name="keywords" content="數位電視天線方向,數位電視發射站,電視發射台位置,數位電視收訊查詢,天線朝向,台灣數位電視,收訊不良">
 <link rel="canonical" href="https://flanderlin.github.io/tv-antenna/">
 <meta property="og:type" content="website">
@@ -132,11 +132,11 @@
     <h3 style="font-size:15px;margin:12px 0 2px">數位電視收訊不好可以怎麼辦？</h3>
     <p class="small">可以先在地圖上拖曳紅點，比較不同位置（例如樓頂與窗邊）的結果；調整「進階參數」裡的天線高度，看架高天線有沒有幫助；也可以換朝向另一個藍色或綠色的發射站。實際收訊還會受到建物、樹木與天氣影響，仍以現場測試為準。</p>
     <h3 style="font-size:15px;margin:12px 0 2px">資料準確嗎？涵蓋哪裡？</h3>
-    <p class="small">涵蓋台灣本島與離島共 101 個數位電視發射站，座標來自 Google My Maps「數位電視發射台位置」。各站實際的發射功率與天線高度沒有公開資料，這裡先用相同的假設值估算，結果僅供架設天線時參考。</p>
+    <p class="small">涵蓋台灣本島與離島共 92 個數位電視發射站址（對應 NCC 官方清單中的 123 部發射機，同一站址的多家電視台已合併），站名與登記電臺依據 NCC「數位無線電視電臺發射機基本資料」，座標來自 Google My Maps「數位電視發射台位置」。各站實際的發射功率與天線高度沒有公開資料，這裡先用相同的假設值估算，結果僅供架設天線時參考。</p>
   </section>
 
   <footer>
-    發射站座標來自 Google My Maps「數位電視發射台位置」（共 101 站，僅含站名與座標）。收訊判斷採自由空間損耗＋地形單刃繞射估算（約 600 MHz、含地球曲率 k=4/3、第一菲涅耳區），未計入建物、樹木與多路徑，僅供架設參考，實際收訊請以現場為準。
+    發射站資料：以國家通訊傳播委員會（NCC）政府資料開放平台「<a href="https://data.gov.tw/dataset/95107" target="_blank" rel="noopener">數位無線電視電臺發射機基本資料</a>」（123 部發射機）為準，整理成 92 個站址；座標取自 Google My Maps「數位電視發射台位置」，少數沒有座標的站（南世、清水、茶山、里佳）以村里中心概略定位。NCC 清單沒有座標、功率與啟用日期。收訊判斷採自由空間損耗＋地形單刃繞射估算（約 600 MHz、含地球曲率 k=4/3、第一菲涅耳區），未計入建物、樹木與多路徑，僅供架設參考，實際收訊請以現場為準。
     地形高程：AWS Terrain Tiles；底圖：內政部國土測繪中心（電子地圖）、Esri（衛星）；地標：OpenStreetMap 貢獻者；地址定位：Nominatim。方位角以正北為 0°、順時針；台灣磁偏角約 4.5°W，「磁方位」≈ 正北方位 − 4.5°（近似）。
   </footer>
 </div>
@@ -159,7 +159,7 @@
 
   function dist(a,b){const dLat=rad(b.lat-a.lat),dLon=rad(b.lon-a.lon);const s=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(s));}
   function bearing(a,b){const y=Math.sin(rad(b.lon-a.lon))*Math.cos(rad(b.lat));const x=Math.cos(rad(a.lat))*Math.sin(rad(b.lat))-Math.sin(rad(a.lat))*Math.cos(rad(b.lat))*Math.cos(rad(b.lon-a.lon));return (deg(Math.atan2(y,x))+360)%360;}
-  const cleanName=n=>/^電視公司主站/.test(n)?n:n.replace(/（.*$/,'');   // 5 個「電視公司主站」同名，保留座標以便區分
+  const cleanName=n=>n;
 
   // ---------- map ----------
   const map=L.map('map',{zoomControl:true}).setView([23.8,121],8);
@@ -364,6 +364,7 @@
       else if(a.worst<0.6) v='視線通透，但第一菲涅耳區有被地形遮蔽（約 '+(a.worst*100).toFixed(0)+'% 淨空）。';
       else v='地形通視良好，第一菲涅耳區沒有被阻隔。';
       el.querySelector('.meta').innerHTML=v+'<br>估計收訊餘裕 <b>'+(a.margin>=0?'+':'')+a.margin.toFixed(0)+' dB</b>（估計接收電平 '+a.pr.toFixed(0)+' dBm）；磁方位（指南針）約 '+((s.b-DECL+360)%360).toFixed(0)+'°。';
+      el.querySelector('.meta').innerHTML+='<br>站型：'+s.k+(s.x?'；<b>NCC 官方清單未列出此站，但參考網站（2024）有列，是否仍運作請留意</b>':'；NCC 登記：'+s.o+'（'+s.r+' 部發射機）')+(s.ap?'；座標為村里概略位置':'')+'。';
       el.querySelector('button').onclick=()=>{ map.fitBounds([[me.lat,me.lon],[s.lat,s.lon]],{padding:[50,50],maxZoom:16}); document.querySelector('.maprel').scrollIntoView({behavior:'smooth',block:'start'}); s.ln&&s.ln.setStyle({weight:7}); setTimeout(()=>s.ln&&s.ln.setStyle({weight:3}),2500); };
       $('cards').appendChild(el);
       profiles.push({cv:el.querySelector('canvas'),a,D:s.d});
