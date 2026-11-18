@@ -88,7 +88,7 @@
       <button id="loc">📍 使用我的位置</button>
     </div>
     <ul id="cands"></ul>
-    <div id="msg" class="msg">輸入地址後，會自動找出附近「可以接收」的發射站；也可以直接在地圖上點一下指定位置，或拖曳紅點微調。</div>
+    <div id="msg" class="msg">輸入地址後，會自動找出附近「可以接收」的發射站；也可以直接在地圖上點一下指定位置；查詢後位置會釘住，要微調請按地圖上的「解除」。</div>
     <details>
       <summary>進階參數（影響收訊判斷）</summary>
       <div class="params">
@@ -430,13 +430,11 @@
         if(i<variants.length-1) await sleep(1100);
       }
       if(!j.length){ msg.className='msg err'; msg.textContent='找不到這個地址。可以簡化一下（例如只輸入「路名＋巷」或「里／村名」），或直接在地圖上點選位置。'; return; }
-      if(used!==q) msg.textContent='找不到完整門牌，已改用「'+used+'」附近定位（可拖曳紅點微調）。';
-      if(j.length===1){ pick(j[0], used!==q); return; }
-      msg.textContent='找到多個結果，請選擇：';
-      j.forEach(x=>{const li=document.createElement('li'); li.textContent=x.display_name; li.onclick=()=>pick(x); $('cands').appendChild(li);});
+      // 有多個結果時，直接採用最符合的第一筆，不再跳出選項；位置不準可解除釘住後拖曳紅點微調
+      pick(j[0], used!==q);
     }catch(e){ msg.className='msg err'; msg.textContent='地址查詢失敗（網路或服務問題），請改用地圖點選位置。'; }
   }
-  function pick(x,approx){ $('cands').innerHTML=''; $('msg').className='msg'; $('msg').textContent=(approx?'找不到完整門牌，已定位到最接近的：':'定位：')+x.display_name+'（若位置略有偏差，可拖曳紅點微調）'; setMe(+x.lat,+x.lon,true); }
+  function pick(x,approx){ $('cands').innerHTML=''; $('msg').className='msg'; $('msg').textContent=(approx?'找不到完整門牌，已定位到最接近的：':'定位：')+x.display_name+'（位置已釘住；若略有偏差，請按地圖上的「解除」再拖曳紅點微調）'; setMe(+x.lat,+x.lon,true); }
   $('go').onclick=search;
   $('q').addEventListener('keydown',e=>{if(e.key==='Enter') search();});
   $('loc').onclick=()=>{
