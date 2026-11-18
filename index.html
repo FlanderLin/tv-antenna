@@ -98,7 +98,7 @@
         <label>每層樓高（m）<input id="pFh" type="number" value="3.2" min="2" max="6" step="0.1"></label>
         <label>發射天線離地高度假設（m）<input id="pTx" type="number" value="30" min="0" step="5"></label>
       </div>
-      <div class="small">目前沒有各發射站的實際功率與天線高度資料，所以全部站台先用相同的假設值估算（預設 800 W）；低功率的小型補隙台，實際涵蓋會比這裡的估算小。改了數值會立刻重新判斷。</div>
+      <div class="small">結果卡片上的「發射功率」只是參考資訊（僅 48 站有資料，來源見頁面下方）；收訊好壞的估算仍先對所有站台使用相同的假設值（預設 800 W），低功率的小型補隙台，實際涵蓋會比這裡的估算小。改了數值會立刻重新判斷。</div>
     </details>
   </div>
 
@@ -132,11 +132,11 @@
     <h3 style="font-size:15px;margin:12px 0 2px">數位電視收訊不好可以怎麼辦？</h3>
     <p class="small">可以先在地圖上拖曳紅點，比較不同位置（例如樓頂與窗邊）的結果；調整「進階參數」裡的天線高度，看架高天線有沒有幫助；也可以換朝向另一個藍色或綠色的發射站。實際收訊還會受到建物、樹木與天氣影響，仍以現場測試為準。</p>
     <h3 style="font-size:15px;margin:12px 0 2px">資料準確嗎？涵蓋哪裡？</h3>
-    <p class="small">涵蓋台灣本島與離島共 92 個數位電視發射站址（對應 NCC 官方清單中的 123 部發射機，同一站址的多家電視台已合併），站名與登記電臺依據 NCC「數位無線電視電臺發射機基本資料」，座標來自 Google My Maps「數位電視發射台位置」。各站實際的發射功率與天線高度沒有公開資料，這裡先用相同的假設值估算，結果僅供架設天線時參考。</p>
+    <p class="small">涵蓋台灣本島與離島共 92 個數位電視發射站址（對應 NCC 官方清單中的 123 部發射機，同一站址的多家電視台已合併），站名與登記電臺依據 NCC「數位無線電視電臺發射機基本資料」，座標來自 Google My Maps「數位電視發射台位置」。有發射功率資料的 48 站，卡片上會顯示功率（部分站還有直接波場強）；沒有資料的站會寫「查無資料」。但收訊好壞的估算仍先用相同的假設值，結果僅供架設天線時參考。</p>
   </section>
 
   <footer>
-    發射站資料：以國家通訊傳播委員會（NCC）政府資料開放平台「<a href="https://data.gov.tw/dataset/95107" target="_blank" rel="noopener">數位無線電視電臺發射機基本資料</a>」（123 部發射機）為準，整理成 92 個站址；座標取自 Google My Maps「數位電視發射台位置」，少數沒有座標的站（南世、清水、茶山、里佳）以村里中心概略定位。NCC 清單沒有座標、功率與啟用日期。座標已與參考網站（dvbt.kennykuo.idv.tw，2024）、OpenStreetMap 及 NCC 登記的行政區交叉比對，其中 49 站有兩個以上來源吻合，7 站標示「座標待確認」，位置可能不準。收訊判斷採自由空間損耗＋地形單刃繞射估算（約 600 MHz、含地球曲率 k=4/3、第一菲涅耳區），未計入建物、樹木與多路徑，僅供架設參考，實際收訊請以現場為準。
+    發射站資料：以國家通訊傳播委員會（NCC）政府資料開放平台「<a href="https://data.gov.tw/dataset/95107" target="_blank" rel="noopener">數位無線電視電臺發射機基本資料</a>」（123 部發射機）為準，整理成 92 個站址；座標取自 Google My Maps「數位電視發射台位置」，少數沒有座標的站（南世、清水、茶山、里佳）以村里中心概略定位。NCC 清單沒有座標、功率與啟用日期。<b>發射功率與直接波場強</b>引自 Kenny Kuo「<a href="https://dvbt.kennykuo.idv.tw/" target="_blank" rel="noopener">無線數位電視2.0</a>」（該網站註明資料歡迎引用、請註明出處；2024 年版），只有對應得上的 48 站有資料；直接波場強僅適用視線傳播，為實驗性質，不能作為可否有效接收的判定依據。座標已與參考網站（dvbt.kennykuo.idv.tw，2024）、OpenStreetMap 及 NCC 登記的行政區交叉比對，其中 49 站有兩個以上來源吻合，7 站標示「座標待確認」，位置可能不準。收訊判斷採自由空間損耗＋地形單刃繞射估算（約 600 MHz、含地球曲率 k=4/3、第一菲涅耳區），未計入建物、樹木與多路徑，僅供架設參考，實際收訊請以現場為準。
     地形高程：AWS Terrain Tiles；底圖：內政部國土測繪中心（電子地圖）、Esri（衛星）；地標：OpenStreetMap 貢獻者；地址定位：Nominatim。方位角以正北為 0°、順時針；台灣磁偏角約 4.5°W，「磁方位」≈ 正北方位 − 4.5°（近似）。
   </footer>
 </div>
@@ -160,6 +160,14 @@
   function dist(a,b){const dLat=rad(b.lat-a.lat),dLon=rad(b.lon-a.lon);const s=Math.sin(dLat/2)**2+Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;return 2*R*Math.asin(Math.sqrt(s));}
   function bearing(a,b){const y=Math.sin(rad(b.lon-a.lon))*Math.cos(rad(b.lat));const x=Math.cos(rad(a.lat))*Math.sin(rad(b.lat))-Math.sin(rad(a.lat))*Math.cos(rad(b.lat))*Math.cos(rad(b.lon-a.lon));return (deg(Math.atan2(y,x))+360)%360;}
   const cleanName=n=>n;
+  // 直接波場強（dBuV）：與參考網站相同算法（自由空間場強 E=√(30·ERP)/d，569 MHz，接收天線電壓，距離取到 0.1 公里）
+  function directDbuv(erp,dKm){
+    const d=Math.round(dKm*10)/10; if(!(d>0)) return 0;
+    const fs=Math.round(Math.sqrt(30*erp)/(d*1000)*1e6)/1e6;
+    const lambda=0.5;   // c/569MHz=0.527，參考網站四捨五入到小數 1 位
+    const rxv=0.5*fs*lambda/3.14145926;
+    return Math.round(20*Math.log10(rxv*1e6)*10)/10;
+  }
 
   // ---------- map ----------
   const map=L.map('map',{zoomControl:true}).setView([23.8,121],8);
@@ -356,7 +364,8 @@
       el.innerHTML='<div class="ttl"><span class="chip '+a.cls+'">'+LBL[a.cls]+'</span><b></b><span class="sub"></span></div>'+
         '<div class="note"></div><canvas></canvas><div class="meta"></div><div class="acts"><button>🗺 在地圖上看這一條</button></div>';
       el.querySelector('b').textContent=cleanName(s.n);
-      el.querySelector('.sub').textContent='(距離約 '+fmtKm(s.d)+' 公里／方位角約 '+s.b.toFixed(0)+' 度，'+compass(s.b)+'方)';
+      // 發射功率與直接波場強引自參考網站資料；沒有資料的站顯示「查無資料」，不自行推測
+      el.querySelector('.sub').textContent='（'+(s.pw?'發射功率 '+s.pw+' W':'發射功率：查無資料')+'，距離約 '+(s.d/1000).toFixed(1)+' 公里／方位角約 '+s.b.toFixed(0)+' 度（'+compass(s.b)+'方）'+(s.erp?'／直接波場強約 '+directDbuv(s.erp,s.d/1000)+' dBuV':'')+'）';
       el.querySelector('.note').textContent='左邊是'+cleanName(s.n)+'，右邊為查詢地點，可觀察中間電波第一菲涅耳區( first fresnel zone )是否有地形阻隔。';
       let v='';
       if(!a.pts) v='（地形資料載入失敗，這一站未計入地形阻擋）';
