@@ -14,6 +14,7 @@
 <meta property="og:description" content="輸入地址，查出附近可接收的數位電視發射站、方位角與距離，並用地形剖面判斷收訊好壞。">
 <meta property="og:url" content="https://flanderlin.github.io/tv-antenna/">
 <meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebSite","name":"數位電視天線方向查詢","alternateName":["台灣數位電視天線方向查詢","數位電視發射站收訊查詢"],"url":"https://flanderlin.github.io/tv-antenna/","inLanguage":"zh-TW"}</script>
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"數位電視天線方向查詢","url":"https://flanderlin.github.io/tv-antenna/","inLanguage":"zh-TW","applicationCategory":"UtilitiesApplication","operatingSystem":"Any","description":"輸入地址，查出附近可接收的數位電視發射站、方位角與距離，並用地形剖面與第一菲涅耳區判斷收訊好壞。","offers":{"@type":"Offer","price":"0","priceCurrency":"TWD"}}</script>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231d5fd6'/%3E%3Cpath d='M32 24v28M22 52h20' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='32' cy='20' r='5' fill='white'/%3E%3Cg stroke='white' stroke-width='4' stroke-linecap='round' fill='none'%3E%3Cpath d='M23 11a13 13 0 0 0 0 18M41 11a13 13 0 0 1 0 18'/%3E%3Cpath d='M16 5a22 22 0 0 0 0 30M48 5a22 22 0 0 1 0 30' opacity='.7'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
@@ -27,6 +28,9 @@
   .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:14px}
   .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
   input[type=text],input[type=number]{padding:9px 10px;border:1px solid #c9d0db;border-radius:8px;font:inherit;min-width:0}
+  .topnav{display:flex;gap:14px;flex-wrap:wrap;margin:-2px 0 10px;font-size:14px}
+  .topnav a,#cities a{color:var(--accent);text-decoration:none} .topnav a:hover,#cities a:hover{text-decoration:underline}
+  #cities a{display:inline-block;margin:2px 12px 2px 0;font-size:14px}
   #q{flex:1;min-width:200px}
   .floorbox{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted);white-space:nowrap}
   #floor{width:72px;text-align:center}
@@ -79,6 +83,7 @@
 <body>
 <div class="wrap">
   <h1>📡 數位電視天線方向查詢｜發射站收訊查詢</h1>
+  <nav class="topnav" aria-label="網站導覽"><a href="stations.html">全台發射站一覽</a><a href="guide-antenna-direction.html">天線對準教學</a><a href="guide-poor-signal.html">收訊不好怎麼辦</a></nav>
 
   <div class="card">
     <div class="row">
@@ -124,7 +129,7 @@
   <section class="card" id="faq">
     <h2 style="font-size:17px;margin:0 0 8px">使用說明與常見問題</h2>
     <h3 style="font-size:15px;margin:12px 0 2px">數位電視天線要朝哪個方向？</h3>
-    <p class="small">輸入你家的地址，這個工具會列出附近可接收的數位電視發射站，並標示每一站的「方位角」與「距離」。天線通常朝向收訊最好（藍色）的那一站，方位角以正北為 0°、順時針計算。用手機指南針對方向時，指南針指的是磁北，台灣磁偏角約 4.5°W，所以實際對準的角度約等於正北方位角減 4.5°。</p>
+    <p class="small">輸入你家的地址，這個工具會列出附近可接收的數位電視發射站，並標示每一站的「方位角」與「距離」。天線通常朝向收訊最好（藍色）的那一站，方位角以正北為 0°、順時針計算。用手機指南針對方向時，指南針指的是磁北；台灣的磁北約在正北的西側 4.5°（磁偏角約 4.5°W，為近似值），所以指南針上要對準的讀數，約等於正北方位角再加 4.5°（卡片上的「磁方位」已經換算好）。</p>
     <h3 style="font-size:15px;margin:12px 0 2px">藍色、綠色、紅色的線代表什麼？</h3>
     <p class="small">從你的位置畫到各發射站的線：藍色表示估計收訊最好，綠色是第二，紅色表示收訊較差（接近能接收的邊緣）。完全接收不到的站不會顯示。</p>
     <h3 style="font-size:15px;margin:12px 0 2px">下面的剖面圖怎麼看？</h3>
@@ -135,9 +140,11 @@
     <p class="small">涵蓋台灣本島與離島共 92 個數位電視發射站址（對應 NCC 官方清單中的 123 部發射機，同一站址的多家電視台已合併），站名與登記電臺依據 NCC「數位無線電視電臺發射機基本資料」，座標來自 Google My Maps「數位電視發射台位置」。有發射功率資料的 48 站，卡片上會顯示功率（部分站還有直接波場強）；沒有資料的站會寫「查無資料」。但收訊好壞的估算仍先用相同的假設值，結果僅供架設天線時參考。</p>
   </section>
 
+  <section class="card" id="cities"><h2 style="font-size:16px;margin:0 0 8px">各縣市數位電視發射站</h2><div class="small"><!--CTY--><a href="county-taipei.html">台北市（4）</a><a href="county-new-taipei.html">新北市（9）</a><a href="county-keelung.html">基隆市（1）</a><a href="county-taoyuan.html">桃園市（1）</a><a href="county-hsinchu-county.html">新竹縣（2）</a><a href="county-miaoli.html">苗栗縣（2）</a><a href="county-taichung.html">台中市（4）</a><a href="county-nantou.html">南投縣（9）</a><a href="county-chiayi-county.html">嘉義縣（5）</a><a href="county-tainan.html">台南市（4）</a><a href="county-kaohsiung.html">高雄市（7）</a><a href="county-pingtung.html">屏東縣（11）</a><a href="county-yilan.html">宜蘭縣（5）</a><a href="county-hualien.html">花蓮縣（7）</a><a href="county-taitung.html">台東縣（9）</a><a href="county-penghu.html">澎湖縣（3）</a><a href="county-kinmen.html">金門縣（2）</a><a href="county-lienchiang.html">連江縣（7）</a><!--/CTY--></div></section>
+
   <footer>
     發射站資料：以國家通訊傳播委員會（NCC）政府資料開放平台「<a href="https://data.gov.tw/dataset/95107" target="_blank" rel="noopener">數位無線電視電臺發射機基本資料</a>」（123 部發射機）為準，整理成 92 個站址；座標取自 Google My Maps「數位電視發射台位置」，少數沒有座標的站（南世、清水、茶山、里佳）以村里中心概略定位。NCC 清單沒有座標、功率與啟用日期。<b>發射功率與直接波場強</b>引自 Kenny Kuo「<a href="https://dvbt.kennykuo.idv.tw/" target="_blank" rel="noopener">無線數位電視2.0</a>」（該網站註明資料歡迎引用、請註明出處；2024 年版），只有對應得上的 48 站有資料；直接波場強僅適用視線傳播，為實驗性質，不能作為可否有效接收的判定依據。座標已與參考網站（dvbt.kennykuo.idv.tw，2024）、OpenStreetMap 及 NCC 登記的行政區交叉比對，其中 49 站有兩個以上來源吻合，7 站標示「座標待確認」，位置可能不準。收訊判斷採自由空間損耗＋地形單刃繞射估算（約 600 MHz、含地球曲率 k=4/3、第一菲涅耳區），未計入建物、樹木與多路徑，僅供架設參考，實際收訊請以現場為準。
-    地形高程：AWS Terrain Tiles；底圖：內政部國土測繪中心（電子地圖）、Esri（衛星）；地標：OpenStreetMap 貢獻者；地址定位：Nominatim。方位角以正北為 0°、順時針；台灣磁偏角約 4.5°W，「磁方位」≈ 正北方位 − 4.5°（近似）。
+    地形高程：AWS Terrain Tiles；底圖：內政部國土測繪中心（電子地圖）、Esri（衛星）；地標：OpenStreetMap 貢獻者；地址定位：Nominatim。方位角以正北為 0°、順時針；台灣磁偏角約 4.5°W（磁北在正北西側），「磁方位」（指南針讀數）≈ 正北方位 + 4.5°（近似值，磁偏角會隨時間緩慢變化）。
   </footer>
 </div>
 
@@ -374,7 +381,7 @@
       else if(a.minClear<0) v='視線被地形擋住（最大約阻擋 '+(-a.minClear).toFixed(0)+' m），繞射損耗約 '+a.Ld.toFixed(0)+' dB。';
       else if(a.worst<0.6) v='視線通透，但第一菲涅耳區有被地形遮蔽（約 '+(a.worst*100).toFixed(0)+'% 淨空）。';
       else v='地形通視良好，第一菲涅耳區沒有被阻隔。';
-      el.querySelector('.meta').innerHTML=v+'<br>估計收訊餘裕 <b>'+(a.margin>=0?'+':'')+a.margin.toFixed(0)+' dB</b>（估計接收電平 '+a.pr.toFixed(0)+' dBm）；磁方位（指南針）約 '+((s.b-DECL+360)%360).toFixed(0)+'°。';
+      el.querySelector('.meta').innerHTML=v+'<br>估計收訊餘裕 <b>'+(a.margin>=0?'+':'')+a.margin.toFixed(0)+' dB</b>（估計接收電平 '+a.pr.toFixed(0)+' dBm）；磁方位（指南針）約 '+((s.b+DECL)%360).toFixed(0)+'°。';
       el.querySelector('.meta').innerHTML+='<br>站型：'+s.k+(s.x?'；<b>NCC 官方清單未列出此站，但參考網站（2024）有列，是否仍運作請留意</b>':'；NCC 登記：'+s.o+'（'+s.r+' 部發射機）')+(s.ap?'；座標為村里概略位置':'')+(s.c?'；<b>座標待確認：'+s.c+'</b>':'')+'。';
       el.querySelector('button').onclick=()=>{ map.fitBounds([[me.lat,me.lon],[s.lat,s.lon]],{padding:[50,50],maxZoom:16}); document.querySelector('.maprel').scrollIntoView({behavior:'smooth',block:'start'}); s.ln&&s.ln.setStyle({weight:7}); setTimeout(()=>s.ln&&s.ln.setStyle({weight:3}),2500); };
       $('cards').appendChild(el);
@@ -462,10 +469,11 @@
   // ---------- init ----------
   let start=null;
   const m=location.hash.match(/^#(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
+  const qParam=(new URLSearchParams(location.search).get('q')||'').trim();   // 縣市頁的連結會帶 ?q=縣市名，自動幫忙查詢
   if(m) start={lat:+m[1],lon:+m[2]};
-  else { try{ start=JSON.parse(localStorage.getItem('tvant-last')||'null'); }catch(e){} }
+  else if(!qParam) { try{ start=JSON.parse(localStorage.getItem('tvant-last')||'null'); }catch(e){} }
   if(start&&isFinite(start.lat)&&isFinite(start.lon)) setMe(start.lat,start.lon,true);
-  else map.fitBounds([[21.8,119.9],[25.4,122.1]]);
+  else { map.fitBounds([[21.8,119.9],[25.4,122.1]]); if(qParam){ $('q').value=qParam; search(); } }
 })();
 </script>
 </body>

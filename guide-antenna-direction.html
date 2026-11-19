@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>數位電視天線怎麼對準？方位角、磁北與指南針教學</title>
+<meta name="description" content="一步步教你把數位電視天線對準發射站：先查出附近發射站的方位角，再用手機指南針換算磁北，微調角度、重新掃描頻道。含台灣磁偏角換算。">
+<link rel="canonical" href="https://flanderlin.github.io/tv-antenna/guide-antenna-direction.html">
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%231d5fd6'/%3E%3Cpath d='M32 24v28M22 52h20' stroke='white' stroke-width='5' stroke-linecap='round' fill='none'/%3E%3Ccircle cx='32' cy='20' r='5' fill='white'/%3E%3Cg stroke='white' stroke-width='4' stroke-linecap='round' fill='none'%3E%3Cpath d='M23 11a13 13 0 0 0 0 18M41 11a13 13 0 0 1 0 18'/%3E%3Cpath d='M16 5a22 22 0 0 0 0 30M48 5a22 22 0 0 1 0 30' opacity='.7'/%3E%3C/g%3E%3C/svg%3E">
+<meta property="og:type" content="article">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:site_name" content="數位電視天線方向查詢">
+<meta property="og:title" content="數位電視天線怎麼對準？方位角、磁北與指南針教學">
+<meta property="og:description" content="一步步教你把數位電視天線對準發射站：先查出附近發射站的方位角，再用手機指南針換算磁北，微調角度、重新掃描頻道。含台灣磁偏角換算。">
+<meta property="og:url" content="https://flanderlin.github.io/tv-antenna/guide-antenna-direction.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "首頁", "item": "https://flanderlin.github.io/tv-antenna/"}, {"@type": "ListItem", "position": 2, "name": "天線對準教學", "item": "https://flanderlin.github.io/tv-antenna/"}]}</script>
+<style>
+:root{--ink:#1c2430;--muted:#667085;--line:#e3e7ee;--accent:#1d5fd6;--bg:#f4f6f9}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 system-ui,-apple-system,"Noto Sans TC","Microsoft JhengHei",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:14px 16px 40px}
+header.site{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:6px;font-size:14px}
+header.site b{font-size:16px;margin-right:6px}
+a{color:var(--accent)}
+nav.bc{font-size:13px;color:var(--muted);margin:8px 0}
+article{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px 22px}
+h1{font-size:25px;line-height:1.4;margin:0 0 10px}h2{font-size:19px;margin:26px 0 8px}h3{font-size:16px;margin:18px 0 4px}
+p{margin:8px 0}.small{font-size:13px;color:var(--muted)}
+.cta{display:inline-block;background:var(--accent);color:#fff;text-decoration:none;padding:10px 18px;border-radius:8px;font-weight:700;margin:6px 0}
+table{border-collapse:collapse;width:100%;font-size:14.5px;margin:8px 0}th,td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top}th{background:#f0f3f8}
+.tbl{overflow-x:auto}ul.links{padding-left:0;list-style:none;display:flex;flex-wrap:wrap;gap:6px 16px}
+footer{font-size:12.5px;color:var(--muted);margin-top:18px;line-height:1.7}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="site"><b>📡 數位電視天線方向查詢</b><a href="./">首頁查詢工具</a><a href="stations.html">全台發射站一覽</a><a href="guide-antenna-direction.html">天線對準教學</a><a href="guide-poor-signal.html">收訊不好怎麼辦</a></header>
+<nav class="bc" aria-label="導覽路徑"><a href="./">首頁</a> › 天線對準教學</nav>
+<article>
+<h1>數位電視天線怎麼對準？方位角、磁北與指南針教學</h1>
+<p>數位電視收不到或畫面一直跳格，很多時候不是電視壞掉，而是天線的方向沒有對準發射站。下面用最簡單的步驟，教你從查出方向，到用手機指南針把天線對準。</p>
+<p><a class="cta" href="./">先查我家附近的發射站方向</a></p>
+<h2>步驟 1：先找出要對準哪個發射站</h2>
+<p>在<a href="./">首頁查詢工具</a>輸入你家地址（可以一起填樓層），工具會列出附近可接收的發射站，並用<b>藍色（收訊最好）、綠色（第二）、紅色（較差）</b>標示。通常優先朝向藍色或綠色的站，並看地形剖面圖，確認中間沒有被山擋住。</p>
+<h2>步驟 2：看懂「方位角」</h2>
+<p>方位角是以<b>正北為 0°、順時針</b>計算的角度：北 0°、東 90°、南 180°、西 270°。例如卡片上寫「方位角約 224 度（西南方）」，就是從你家看出去，發射站在偏西南的方向。</p>
+<h2>步驟 3：把「正北方位角」換成「指南針讀數」</h2>
+<p>手機和指南針指的是<b>磁北</b>，不是地圖上的<b>正北</b>，兩者有一個小差距，叫「磁偏角」。台灣的磁北約在正北的<b>西側 4.5°</b>（近似值，會隨時間緩慢變化），所以：</p>
+<p><b>指南針讀數 ≈ 正北方位角 + 4.5°</b></p>
+<p>例如方位角 224°，指南針上要對準約 228.5°。查詢工具的結果卡片已經幫你算好「磁方位（指南針）」，直接照著對就可以。有些手機的指南針 App 可以切換成「正北（True North）」模式，這種模式就直接用方位角，不用再加。</p>
+<h2>步驟 4：用手機指南針對準</h2>
+<ol><li>打開手機指南針，手機<b>水平拿平</b>，遠離金屬、喇叭、電器，這些會干擾指南針。</li><li>站在天線旁邊，轉動身體，讓指南針讀數對到剛剛算出的磁方位。</li><li>把天線的正面（指向性天線的前方）轉向同一個方向。</li></ol>
+<h2>步驟 5：微調並重新掃描</h2>
+<ul><li>每次調整角度，大約 5～10° 一格，慢慢轉。</li><li>每調整一次，電視要重新執行「自動頻道搜尋」，因為電視不會自動重新偵測。</li><li>看電視選單裡的「<b>訊號品質</b>」，而不只是訊號強度。強度高但品質差，常常是被反射波或雜訊干擾。</li><li>找到品質最好的角度後固定住。</li></ul>
+<h2>常見錯誤</h2>
+<ul><li>用指南針對方位角，卻沒有換算磁北（差約 4.5°，指向性強的天線可能有影響）。</li><li>在室內或金屬窗框旁量角度，讀數不準。</li><li>調整後忘了重新掃描頻道。</li><li>天線被建物、樹木擋住，只調方向沒有用，可以試著提高高度或改放戶外。</li></ul>
+<h2>想知道其他縣市的發射站？</h2>
+<p>請看<a href="stations.html">全台數位電視發射站一覽</a>。如果收訊還是不好，可以參考<a href="guide-poor-signal.html">數位電視收訊不好的原因與解決方法</a>。</p>
+</article>
+<footer>發射站資料依據國家通訊傳播委員會（NCC）政府資料開放平台「<a href="https://data.gov.tw/dataset/95107" target="_blank" rel="noopener">數位無線電視電臺發射機基本資料</a>」；座標取自 Google My Maps「數位電視發射台位置」並與參考網站、OpenStreetMap 交叉比對；發射功率引自 Kenny Kuo「<a href="https://dvbt.kennykuo.idv.tw/" target="_blank" rel="noopener">無線數位電視2.0</a>」。本站為個人整理，結果僅供架設天線時參考，實際收訊請以現場為準。</footer>
+</div>
+</body>
+</html>
