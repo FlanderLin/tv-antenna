@@ -428,6 +428,19 @@
   }
 
   // ---------- 地址查詢 ----------
+  // 台灣地址解析：開放地圖用「臺」、中文段數（三段），使用者常輸入「台」、「3段」，直接查會找不到
+  const CNUM=['','一','二','三','四','五','六','七','八','九','十'];
+  function normAddr(s){
+    s=s.replace(/\s+/g,'').replace(/台/g,'臺').replace(/[０-９]/g,c=>String.fromCharCode(c.charCodeAt(0)-65248));
+    return s.replace(/(\d{1,2})段/g,(m,n)=>(+n>=1&&+n<=10?CNUM[+n]:n)+'段');
+  }
+  function parseAddr(q){
+    const s=normAddr(q).replace(/(\d+|[一二三四五六七八九十]+)(樓|F|f)(之\d+)?.*$/,'');
+    const m=s.match(/^(?:(.{2,3}?[縣市]))?(?:(.{1,3}?[鄉鎮市區]))?(.+?(?:路|街|大道))([一二三四五六七八九十]+段)?(?:(\d+)巷)?(?:(\d+)弄)?(?:(\d+)(?:之(\d+))?號)?/);
+    if(!m) return null;
+    const [,city,district,road,sec,lane,alley,num,sub]=m;
+    return {city, district, street:road+(sec||'')+(lane?lane+'巷':'')+(alley?alley+'弄':''), num:num?(num+(sub?'之'+sub:'')):'', hasHouse:!!num};
+  }
   async function search(){
     const q=$('q').value.trim(); if(!q) return;
     // 地址裡有寫樓層（例如「10樓」「12F」）就自動帶入樓層欄位
@@ -435,25 +448,50 @@
     if(fm&&+fm[1]>=1){ $('floor').value=+fm[1]; try{localStorage.setItem('tvant-floor',fm[1]);}catch(e){} }
     const msg=$('msg'); msg.className='msg'; msg.textContent='搜尋中…'; $('cands').innerHTML='';
     try{
-      // 門牌在 OpenStreetMap 常常沒有收錄：找不到時，依序拿掉樓層、門牌號、巷弄再試，定位到最接近的路段
-      const variants=[q];
-      const v1=q.replace(/\s+/g,'').replace(/(\d+|[一二三四五六七八九十]+)\s*(樓|F|f)(之\d+)?.*$/,'');
-      const v2=v1.replace(/\d+(之\d+)?號.*$/,'');
-      const v3=v2.replace(/\d+弄.*$/,'').replace(/\d+巷.*$/,'');
-      [v1,v2,v3].forEach(v=>{ if(v && !variants.includes(v)) variants.push(v); });
-      let j=[], used=q;
-      for(let i=0;i<variants.length;i++){
-        const url='https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&countrycodes=tw&accept-language=zh-TW&q='+encodeURIComponent(variants[i]);
-        let r=await fetch(url);
-        if(r.status===429){ await sleep(3000); r=await fetch(url); }
-        j=await r.json(); used=variants[i];
-        if(j.length) break;
-        if(i<variants.length-1) await sleep(1100);
+      const enc=encodeURIComponent;
+      const nom=async params=>{
+        const u='https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countrycodes=tw&accept-language=zh-TW&'+params;
+        let r=await fetch(u); if(r.status===429){ await sleep(3000); r=await fetch(u); }
+        return await r.json();
+      };
+      const byDistrict=(j,d)=>(d&&j.find(x=>x.display_name.includes(d)))||j[0];
+      // ① 先把台灣地址拆開（縣市／區／路名＋段／巷弄／門牌），用「門牌＋路名」的結構化查詢，最準
+      const pa=parseAddr(q);
+      let hit=null, exact=false, approx=false;
+      if(pa && pa.city){
+        const key=/縣$/.test(pa.city)?'county':'city';
+        if(pa.hasHouse){
+          const j=await nom('street='+enc(pa.num+' '+pa.street)+'&'+key+'='+enc(pa.city));
+          const hn=j.filter(x=>x.address&&x.address.house_number);          // 真的有對到門牌才算「精準」
+          if(hn.length){ hit=byDistrict(hn,pa.district); exact=true; }
+          else if(j.length){ hit=byDistrict(j,pa.district); approx=true; }   // 只回傳路段
+          await sleep(1100);
+        }
+        // ② 找不到門牌就退到「路段」（路名用空格隔開、台→臺、阿拉伯數字段→中文，開放地圖才查得到）
+        if(!hit){
+          const j=await nom('q='+enc([pa.street,pa.district,pa.city].filter(Boolean).join(' ')));
+          if(j.length){ hit=byDistrict(j,pa.district); approx=pa.hasHouse; }
+          await sleep(1100);
+        }
       }
-      if(!j.length){ msg.className='msg err'; msg.textContent='找不到這個地址。可以簡化一下（例如只輸入「路名＋巷」或「里／村名」），或直接在地圖上點選位置。'; return; }
-      // 有多個結果時，直接採用最符合的第一筆，不再跳出選項；位置不準可解除釘住後拖曳紅點微調
-      pick(j[0], used!==q);
-    }catch(e){ msg.className='msg err'; msg.textContent='地址查詢失敗（網路或服務問題），請改用地圖點選位置。'; }
+      // ③ 地標、車站等沒有門牌的查詢，或上面都找不到：依序拿掉樓層、門牌號、巷弄再試
+      if(!hit){
+        const variants=[q];
+        const n1=normAddr(q);
+        const v1=q.replace(/\s+/g,'').replace(/(\d+|[一二三四五六七八九十]+)\s*(樓|F|f)(之\d+)?.*$/,'');
+        const v2=v1.replace(/\d+(之\d+)?號.*$/,'');
+        const v3=v2.replace(/\d+弄.*$/,'').replace(/\d+巷.*$/,'');
+        [n1,v1,v2,v3].forEach(v=>{ if(v && !variants.includes(v)) variants.push(v); });
+        for(let i=0;i<variants.length;i++){
+          const j=await nom('q='+enc(variants[i]));
+          if(j.length){ hit=j[0]; approx=variants[i]!==q; break; }
+          if(i<variants.length-1) await sleep(1100);
+        }
+      }
+      if(!hit){ msg.className='msg err'; msg.textContent='找不到這個地址，地圖位置沒有改變。請確認縣市、區、路名與段數（例如「臺北市大同區承德路三段229號」），或直接在地圖上點選位置。'; return; }
+      // 有多個結果時，直接採用最符合的第一筆；位置不準可解除釘住後拖曳紅點微調
+      pick(hit, approx && !exact);
+    }catch(e){ msg.className='msg err'; msg.textContent='地址查詢失敗（網路或服務問題），地圖位置沒有改變，請稍後再試或改用地圖點選位置。'; }
   }
   function pick(x,approx){ $('cands').innerHTML=''; $('msg').className='msg'; $('msg').textContent=(approx?'找不到完整門牌，已定位到最接近的：':'定位：')+x.display_name+'（位置已釘住；若略有偏差，請按地圖上的「解除」再拖曳紅點微調）'; setMe(+x.lat,+x.lon,true); }
   $('go').onclick=search;
