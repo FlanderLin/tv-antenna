@@ -192,10 +192,55 @@
     sat:L.layerGroup([T('World_Imagery',{attribution:'影像 © Esri, Maxar, Earthstar Geographics'}),T('Reference/World_Boundaries_and_Places'),T('Reference/World_Transportation',{opacity:.9})])
   };
   let curBm='street'; layers.street.addTo(map);
-  document.querySelectorAll('[data-bm]').forEach(b=>b.onclick=()=>{
-    map.removeLayer(layers[curBm]); curBm=b.dataset.bm; layers[curBm].addTo(map);
-    document.querySelectorAll('[data-bm]').forEach(x=>x.classList.toggle('on',x===b));
-  });
+  let poiPref=true;
+  function setBm(name){
+    if(!layers[name]) return;
+    const wasG=/^g/.test(curBm), nowG=/^g/.test(name);
+    map.removeLayer(layers[curBm]); curBm=name; layers[curBm].addTo(map);
+    document.querySelectorAll('[data-bm]').forEach(x=>x.classList.toggle('on',x.dataset.bm===name));
+    // Google 地圖本身就有所有地標，不再另外載入超商圖示（也減少地址查詢服務的流量）
+    const pb=document.querySelector('.poibtn');
+    if(nowG&&!wasG){ poiPref=$('poiOn').checked; $('poiOn').checked=false; poiLayer.clearLayers(); poiBox=null; if(pb) pb.style.display='none'; }
+    if(!nowG&&wasG){ $('poiOn').checked=poiPref; if(pb) pb.style.display=''; schedulePois(); }
+  }
+  document.querySelectorAll('[data-bm]').forEach(b=>b.onclick=()=>setBm(b.dataset.bm));
+
+  // ---------- Google 地圖（選用） ----------
+  // 要用 Google 地圖底圖與 Google 地址定位，請把你自己的 Google Maps JavaScript API 金鑰填在下面（需啟用 Maps JavaScript API 與 Geocoding API，
+  // 並在 Google Cloud 把金鑰限制為 https://flanderlin.github.io/*）。留空就完全不啟用，網站照原本的方式運作。
+  const GOOGLE_KEY='';
+  let gGeocoder=null;
+  function googleFallback(why){
+    gGeocoder=null;
+    document.querySelectorAll('[data-bm^="g"]').forEach(b=>b.remove());
+    if(/^g/.test(curBm)) setBm('street');
+    delete layers.gmap; delete layers.gsat;
+    const m=document.getElementById('msg'); if(m&&why) { m.className='msg err'; m.textContent=why; }
+  }
+  function loadGoogle(){
+    if(!GOOGLE_KEY) return;
+    window.gm_authFailure=()=>googleFallback('Google 金鑰無法使用（可能未啟用 API、未綁定帳單或網址限制不符），已改用原本的地圖與地址查詢。');
+    window.__gmReady=()=>{
+      try{ gGeocoder=new google.maps.Geocoder(); }catch(e){ return; }
+      const s=document.createElement('script');
+      s.src='https://unpkg.com/leaflet.gridlayer.googlemutant@0.14.1/dist/Leaflet.GoogleMutant.js';
+      s.onload=()=>{
+        try{
+          layers.gmap=L.gridLayer.googleMutant({type:'roadmap',maxZoom:21});
+          layers.gsat=L.gridLayer.googleMutant({type:'hybrid',maxZoom:21});
+          const bar=document.querySelector('.basemaps');
+          [['gsat','Google 衛星'],['gmap','Google 地圖']].forEach(([k,t])=>{ const b=document.createElement('button'); b.dataset.bm=k; b.textContent=t; b.onclick=()=>setBm(k); bar.insertBefore(b,bar.firstChild); });
+          setBm('gmap');
+        }catch(e){ googleFallback(''); }
+      };
+      s.onerror=()=>googleFallback('');
+      document.head.appendChild(s);
+    };
+    const s=document.createElement('script');
+    s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(GOOGLE_KEY)+'&language=zh-TW&region=TW&callback=__gmReady';
+    s.async=true; s.onerror=()=>googleFallback('');
+    document.head.appendChild(s);
+  }
   L.control.scale({imperial:false}).addTo(map);
   const rayLayer=L.layerGroup().addTo(map);
   const poiLayer=L.layerGroup().addTo(map);
@@ -460,6 +505,15 @@
     const msg=$('msg'); msg.className='msg'; msg.textContent='搜尋中…'; $('cands').innerHTML='';
     searchBusy++;
     try{
+      // 有設定 Google 金鑰時，優先用 Google 地址定位（台灣門牌最完整）；查不到、額度用完或權限問題，就退回下面原本的地址查詢
+      if(gGeocoder){
+        const g=await new Promise(res=>{ try{ gGeocoder.geocode({address:q, region:'TW', componentRestrictions:{country:'TW'}},(r,s)=>res({r,s})); }catch(e){ res({r:null,s:'ERR'}); } });
+        if(g.s==='OK'&&g.r&&g.r[0]){
+          const x=g.r[0], lt=x.geometry.location_type, house=(lt==='ROOFTOP'||lt==='RANGE_INTERPOLATED');
+          pick({lat:x.geometry.location.lat(), lon:x.geometry.location.lng(), display_name:x.formatted_address, address:house?{house_number:'google'}:undefined}, !house, false, lt==='APPROXIMATE', 'google');
+          return;
+        }
+      }
       const enc=encodeURIComponent;
       const nom=async params=>{
         const u='https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=5&countrycodes=tw&accept-language=zh-TW&'+params;
@@ -529,10 +583,11 @@
     const el=$('locnote'); if(!el) return;
     el.hidden=false; el.className='locnote '+level; el.textContent=text;
   }
-  function pick(x,approx,multi,villageLevel){
+  function pick(x,approx,multi,villageLevel,src){
     const exactHouse=!!(x.address&&x.address.house_number);
     const level=exactHouse?'ok':(approx?'warn':'info');
-    const label=exactHouse?(multi?'已對到門牌，但有多個同名門牌，採用第一個，請確認縣市與區。':'已對到門牌。'):(villageLevel?'這一帶開放地圖沒有門牌與路名資料，只能定位到村里的概略位置（可能差 1～3 公里）。紅點已解除釘住，請把它拖到你家，或在地圖上點一下，可切換「衛星＋地名」確認。':(approx?'找不到完整門牌，只定位到路段，位置可能差數百公尺到 1～2 公里。紅點已解除釘住，若位置不對請把它拖到你家，或在地圖上點一下。':''));
+    const gLabel=src==='google'?(exactHouse?'已對到門牌（Google 地址定位）。':(villageLevel?'Google 只能定位到區域的概略位置（可能差數公里）。紅點已解除釘住，請把它拖到你家，或在地圖上點一下。':'Google 只能定位到路段，位置可能差數百公尺。紅點已解除釘住，若位置不對請把它拖到你家，或在地圖上點一下。')):'';
+    const label=gLabel?gLabel:exactHouse?(multi?'已對到門牌，但有多個同名門牌，採用第一個，請確認縣市與區。':'已對到門牌。'):(villageLevel?'這一帶開放地圖沒有門牌與路名資料，只能定位到村里的概略位置（可能差 1～3 公里）。紅點已解除釘住，請把它拖到你家，或在地圖上點一下，可切換「衛星＋地名」確認。':(approx?'找不到完整門牌，只定位到路段，位置可能差數百公尺到 1～2 公里。紅點已解除釘住，若位置不對請把它拖到你家，或在地圖上點一下。':''));
     $('cands').innerHTML=''; $('msg').className='msg';
     $('msg').textContent=(approx?'找不到完整門牌，已定位到最接近的：':'定位：')+x.display_name+(approx?'（紅點已解除釘住，請拖曳或點地圖微調到你家）':'（位置已釘住；若略有偏差，請按地圖上的「解除」再拖曳紅點微調）');
     locNote(level,'📍 '+label+' '+x.display_name+'（'+(+x.lat).toFixed(5)+', '+(+x.lon).toFixed(5)+'）');
@@ -557,6 +612,7 @@
   else if(!qParam) { try{ start=JSON.parse(localStorage.getItem('tvant-last')||'null'); }catch(e){} }
   if(start&&isFinite(start.lat)&&isFinite(start.lon)) setMe(start.lat,start.lon,true);
   else { map.fitBounds([[21.8,119.9],[25.4,122.1]]); if(qParam){ $('q').value=qParam; search(); } }
+  loadGoogle();   // 沒有填金鑰時什麼都不做
 })();
 </script>
 </body>
