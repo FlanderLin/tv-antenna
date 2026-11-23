@@ -446,10 +446,11 @@
     let s=normAddr(q).replace(/(\d+|[一二三四五六七八九十]+)(樓|F|f)(之\d+)?.*$/,'');
     s=s.replace(/^\d{3,6}(?=\D)/,'');   // 開頭的郵遞區號（例如「103台北市…」）
     // 縣市、區可以省略；「○○里／村」「○鄰」這類不影響定位，直接略過
-    const m=s.match(/^(?:(.{2,3}?[縣市]))?(?:(.{1,3}?[鄉鎮市區]))?(?:[一-鿿]{1,3}[里村])?(?:\d+鄰)?(.+?(?:路|街|大道))([一二三四五六七八九十]+段)?(?:(\d+)巷)?(?:(\d+)弄)?(?:(\d+)(?:之(\d+))?號?)?/);
+    // 門牌可寫「70之1」「70-1」；「永平村」這類村里名稱要保留，鄉下常有多條同名道路，要靠村里分辨
+    const m=s.match(/^(?:(.{2,3}?[縣市]))?(?:(.{1,3}?[鄉鎮市區]))?(?:([一-鿿]{1,3}[里村]))?(?:\d+鄰)?(.+?(?:路|街|大道))([一二三四五六七八九十]+段)?(?:(\d+)巷)?(?:(\d+)弄)?(?:(\d+)(?:[之\-－](\d+))?號?)?/);
     if(!m) return null;
-    const [,city,district,road,sec,lane,alley,num,sub]=m;
-    return {city, district, street:road+(sec||'')+(lane?lane+'巷':'')+(alley?alley+'弄':''), num:num?(num+(sub?'之'+sub:'')):'', hasHouse:!!num};
+    const [,city,district,village,road,sec,lane,alley,num,sub]=m;
+    return {city, district, village, street:road+(sec||'')+(lane?lane+'巷':'')+(alley?alley+'弄':''), num:num?(num+(sub?'之'+sub:'')):'', hasHouse:!!num};
   }
   async function search(){
     const q=$('q').value.trim(); if(!q) return;
@@ -472,21 +473,36 @@
       const byDistrict=(j,d)=>(d&&j.find(x=>x.display_name.includes(d)))||j[0];
       // ① 先把台灣地址拆開（縣市／區／路名＋段／巷弄／門牌），用「門牌＋路名」的結構化查詢，最準
       const pa=parseAddr(q);
-      let hit=null, exact=false, approx=false, multi=false;
+      let hit=null, exact=false, approx=false, multi=false, villageLevel=false;
+      // 同一條路在同一個村里常被切成好幾段：取靠近第一段（2.5 公里內）的幾段的中心，比任選一段穩定
+      const roadCenter=(list)=>{
+        const f=list[0]; const near=list.filter(x=>dist({lat:+f.lat,lon:+f.lon},{lat:+x.lat,lon:+x.lon})<=2500);
+        if(near.length<2) return f;
+        return Object.assign({},f,{lat:near.reduce((s,x)=>s+ +x.lat,0)/near.length, lon:near.reduce((s,x)=>s+ +x.lon,0)/near.length});
+      };
       if(pa && (pa.city||pa.district||pa.hasHouse)){
         const key=pa.city&&(/縣$/.test(pa.city)?'county':'city');
-        const inDist=(j)=>pa.district?j.filter(x=>x.display_name.includes(pa.district)):j;   // 有寫區就只接受該區的結果，避免配到別的縣市同名道路
+        const inDist=(j)=>{
+          const d=pa.district?j.filter(x=>x.display_name.includes(pa.district)):j;   // 有寫區就只接受該區的結果，避免配到別的縣市同名道路
+          const v=pa.village?d.filter(x=>x.display_name.includes(pa.village)):[];     // 有寫村里，優先選同村里的道路（鄉下常有很多條同名道路）
+          return v.length?v:d;
+        };
         if(pa.hasHouse){
           // 沒寫縣市也照樣用「門牌＋路名」查，不能因為少寫縣市就退到整條路
           const j=await nom('street='+enc(pa.num+' '+pa.street)+(pa.city?'&'+key+'='+enc(pa.city):''));
           const hn=inDist(j.filter(x=>x.address&&x.address.house_number));      // 真的有對到門牌才算「精準」
           if(hn.length){ hit=hn[0]; exact=true; multi=!pa.city&&!pa.district&&hn.length>1; }
-          else { const jd=inDist(j); if(jd.length&&(pa.city||pa.district)){ hit=jd[0]; approx=true; } }   // 只回傳路段
+          else { const jd=inDist(j); if(jd.length&&(pa.city||pa.district)&&(!pa.village||jd[0].display_name.includes(pa.village))){ hit=roadCenter(jd); approx=true; } }   // 只回傳路段
         }
-        // ② 找不到門牌就退到「路段」（路名用空格隔開、台→臺、阿拉伯數字段→中文，開放地圖才查得到）
+        // ② 找不到門牌就退到「路段」（路名用空格隔開、台→臺、阿拉伯數字段→中文，開放地圖才查得到）；有村里就一起帶進去
         if(!hit && (pa.city||pa.district)){
-          const j=inDist(await nom('q='+enc([pa.street,pa.district,pa.city].filter(Boolean).join(' '))));
-          if(j.length){ hit=j[0]; approx=pa.hasHouse; }
+          const j=inDist(await nom('q='+enc([pa.street,pa.village,pa.district,pa.city].filter(Boolean).join(' '))));
+          if(j.length&&(!pa.village||j[0].display_name.includes(pa.village))){ hit=roadCenter(j); approx=pa.hasHouse; }
+        }
+        // ②b 路段不在你寫的村里、或根本沒有這條路：退到「村里」的位置（鄉下沒有門牌資料時，開放地圖只能到這一步）
+        if(!hit && pa.village){
+          const j=inDist(await nom('q='+enc([pa.village,pa.district,pa.city].filter(Boolean).join(' '))));
+          if(j.length){ hit=j[0]; approx=true; villageLevel=true; }
         }
       }
       // ③ 地標、車站等沒有門牌的查詢，或上面都找不到：依序拿掉樓層、門牌號、巷弄再試
@@ -504,7 +520,7 @@
       }
       if(!hit){ msg.className='msg err'; msg.textContent='找不到這個地址，地圖位置沒有改變。請確認縣市、區、路名與段數（例如「臺北市大同區承德路三段229號」），或直接在地圖上點選位置。'; locNote('fail','找不到這個地址，地圖上的紅點沒有移動（仍是上一次的位置）。'); return; }
       // 有多個結果時，直接採用最符合的第一筆；位置不準可解除釘住後拖曳紅點微調
-      pick(hit, approx && !exact, multi);
+      pick(hit, approx && !exact, multi, villageLevel);
     }catch(e){ msg.className='msg err'; msg.textContent='地址查詢失敗（網路或服務問題），地圖位置沒有改變，請稍後再試或改用地圖點選位置。'; locNote('fail','地址查詢失敗，地圖上的紅點沒有移動（仍是上一次的位置）。'); }
     finally{ searchBusy--; }
   }
@@ -513,14 +529,15 @@
     const el=$('locnote'); if(!el) return;
     el.hidden=false; el.className='locnote '+level; el.textContent=text;
   }
-  function pick(x,approx,multi){
+  function pick(x,approx,multi,villageLevel){
     const exactHouse=!!(x.address&&x.address.house_number);
     const level=exactHouse?'ok':(approx?'warn':'info');
-    const label=exactHouse?(multi?'已對到門牌，但有多個同名門牌，採用第一個，請確認縣市與區。':'已對到門牌。'):(approx?'找不到完整門牌，只定位到路段，位置可能差數百公尺。':'');
+    const label=exactHouse?(multi?'已對到門牌，但有多個同名門牌，採用第一個，請確認縣市與區。':'已對到門牌。'):(villageLevel?'這一帶開放地圖沒有門牌與路名資料，只能定位到村里的概略位置（可能差 1～3 公里）。紅點已解除釘住，請把它拖到你家，或在地圖上點一下，可切換「衛星＋地名」確認。':(approx?'找不到完整門牌，只定位到路段，位置可能差數百公尺到 1～2 公里。紅點已解除釘住，若位置不對請把它拖到你家，或在地圖上點一下。':''));
     $('cands').innerHTML=''; $('msg').className='msg';
-    $('msg').textContent=(approx?'找不到完整門牌，已定位到最接近的：':'定位：')+x.display_name+'（位置已釘住；若略有偏差，請按地圖上的「解除」再拖曳紅點微調）';
+    $('msg').textContent=(approx?'找不到完整門牌，已定位到最接近的：':'定位：')+x.display_name+(approx?'（紅點已解除釘住，請拖曳或點地圖微調到你家）':'（位置已釘住；若略有偏差，請按地圖上的「解除」再拖曳紅點微調）');
     locNote(level,'📍 '+label+' '+x.display_name+'（'+(+x.lat).toFixed(5)+', '+(+x.lon).toFixed(5)+'）');
     setMe(+x.lat,+x.lon,true);
+    if(approx&&!exactHouse) setLock(false);   // 只是概略位置：不釘住，讓使用者直接拖曳或點地圖修正到自己家
   }
   $('go').onclick=search;
   $('q').addEventListener('keydown',e=>{if(e.key==='Enter') search();});
