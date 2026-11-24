@@ -506,12 +506,14 @@
     searchBusy++;
     try{
       // 有設定 Google 金鑰時，優先用 Google 地址定位（台灣門牌最完整）；查不到、額度用完或權限問題，就退回下面原本的地址查詢
+      let gSpare=null;   // Google 只「部分匹配」時（常是同路名但不同號碼／不同村里的門牌），先不採用，留作最後備案
       if(gGeocoder){
         const g=await new Promise(res=>{ try{ gGeocoder.geocode({address:q, region:'TW', componentRestrictions:{country:'TW'}},(r,s)=>res({r,s})); }catch(e){ res({r:null,s:'ERR'}); } });
         if(g.s==='OK'&&g.r&&g.r[0]){
           const x=g.r[0], lt=x.geometry.location_type, house=(lt==='ROOFTOP'||lt==='RANGE_INTERPOLATED');
-          pick({lat:x.geometry.location.lat(), lon:x.geometry.location.lng(), display_name:x.formatted_address, address:house?{house_number:'google'}:undefined}, !house, false, lt==='APPROXIMATE', 'google');
-          return;
+          const gh={lat:x.geometry.location.lat(), lon:x.geometry.location.lng(), display_name:x.formatted_address};
+          if(x.partial_match) gSpare=gh;
+          else { pick(Object.assign(gh,{address:house?{house_number:'google'}:undefined}), !house, false, lt==='APPROXIMATE', 'google'); return; }
         }
       }
       const enc=encodeURIComponent;
@@ -572,6 +574,7 @@
           if(j.length){ hit=j[0]; approx=variants[i]!==q; break; }
         }
       }
+      if(!hit&&gSpare){ pick(gSpare, true, false, false, 'google'); return; }   // OSM 也查不到：用 Google 的部分匹配當概略位置（不釘住）
       if(!hit){ msg.className='msg err'; msg.textContent='找不到這個地址，地圖位置沒有改變。請確認縣市、區、路名與段數（例如「臺北市大同區承德路三段229號」），或直接在地圖上點選位置。'; locNote('fail','找不到這個地址，地圖上的紅點沒有移動（仍是上一次的位置）。'); return; }
       // 有多個結果時，直接採用最符合的第一筆；位置不準可解除釘住後拖曳紅點微調
       pick(hit, approx && !exact, multi, villageLevel);
