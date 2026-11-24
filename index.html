@@ -210,16 +210,37 @@
   // 並在 Google Cloud 把金鑰限制為 https://flanderlin.github.io/*）。留空就完全不啟用，網站照原本的方式運作。
   const GOOGLE_KEY='AIzaSyDhkg-9IvhwQEToWduClSpvTjbHQqYkZss';
   let gGeocoder=null;
-  function googleFallback(why){
+  const QUOTA_MSG='Google 的查詢額度已用完，已自動關閉「Google 地圖／Google 衛星」，改用原本的地圖與地址查詢。額度重置後（通常隔天）重新整理頁面即可再用。';
+  function quotaNotice(){
+    let b=document.getElementById('gquota');
+    if(!b){
+      b=document.createElement('div'); b.id='gquota'; b.setAttribute('role','alert');
+      b.style.cssText='position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:99999;max-width:min(92vw,520px);background:#7a4b00;color:#fff;border-radius:10px;padding:12px 40px 12px 14px;font-size:14px;line-height:1.5;box-shadow:0 4px 18px rgba(0,0,0,.35)';
+      const t=document.createElement('span'); t.id='gquota-t'; b.appendChild(t);
+      const x=document.createElement('button'); x.type='button'; x.textContent='✕'; x.setAttribute('aria-label','關閉提示');
+      x.style.cssText='position:absolute;right:6px;top:6px;border:0;background:transparent;color:#fff;font-size:16px;cursor:pointer;padding:4px 8px';
+      x.onclick=()=>b.remove(); b.appendChild(x); document.body.appendChild(b);
+    }
+    document.getElementById('gquota-t').textContent='⚠️ 已達查詢次數上限：'+QUOTA_MSG;
+  }
+  function googleFallback(why,quota){
     gGeocoder=null;
     document.querySelectorAll('[data-bm^="g"]').forEach(b=>b.remove());
     if(/^g/.test(curBm)) setBm('street');
     delete layers.gmap; delete layers.gsat;
+    if(quota){ quotaNotice(); return; }
     const m=document.getElementById('msg'); if(m&&why) { m.className='msg err'; m.textContent=why; }
   }
   function loadGoogle(){
     if(!GOOGLE_KEY) return;
-    window.gm_authFailure=()=>googleFallback('Google 金鑰無法使用（可能未啟用 API、未綁定帳單或網址限制不符），已改用原本的地圖與地址查詢。');
+    // Google 地圖超過額度時只會在主控台記錄 OverQuotaMapError，所以攔截這類錯誤，偵測到就自動關閉 Google 選項並跳出提示
+    let overQuota=false;
+    const _ce=console.error;
+    console.error=function(...a){
+      try{ const t=a.map(String).join(' '); if(/Google Maps JavaScript API error/i.test(t)&&/OverQuota|OverDailyLimit|OVER_QUERY_LIMIT/i.test(t)){ overQuota=true; googleFallback('',true); } }catch(e){}
+      return _ce.apply(this,a);
+    };
+    window.gm_authFailure=()=>{ if(overQuota) googleFallback('',true); else googleFallback('Google 金鑰無法使用（可能未啟用 API、未綁定帳單或網址限制不符），已改用原本的地圖與地址查詢。'); };
     window.__gmReady=()=>{
       try{ gGeocoder=new google.maps.Geocoder(); }catch(e){ return; }
       const s=document.createElement('script');
@@ -509,6 +530,7 @@
       let gSpare=null;   // Google 只「部分匹配」時（常是同路名但不同號碼／不同村里的門牌），先不採用，留作最後備案
       if(gGeocoder){
         const g=await new Promise(res=>{ try{ gGeocoder.geocode({address:q, region:'TW', componentRestrictions:{country:'TW'}},(r,s)=>res({r,s})); }catch(e){ res({r:null,s:'ERR'}); } });
+        if(g.s==='OVER_QUERY_LIMIT'||g.s==='OVER_DAILY_LIMIT') googleFallback('',true);   // 額度用完：關掉 Google 選項、跳出提示，這次改走下面原本的查詢
         if(g.s==='OK'&&g.r&&g.r[0]){
           const x=g.r[0], lt=x.geometry.location_type, house=(lt==='ROOFTOP'||lt==='RANGE_INTERPOLATED');
           const gh={lat:x.geometry.location.lat(), lon:x.geometry.location.lng(), display_name:x.formatted_address};
