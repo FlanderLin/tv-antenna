@@ -329,7 +329,6 @@
 
   function setMe(lat,lon,zoomTo){
     me={lat,lon};
-    try{history.replaceState(null,'','#'+lat.toFixed(6)+','+lon.toFixed(6));}catch(e){}
     if(!meMarker){
       meMarker=L.marker([lat,lon],{draggable:true,zIndexOffset:1000,icon:L.divIcon({className:'',html:'<div class="me-pin"></div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(map);
       meMarker.bindTooltip('查詢位置（可拖曳）');
@@ -630,9 +629,9 @@
 
   // ---------- init ----------
   let start=null;
-  const m=location.hash.match(/^#(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
+  // 不再把位置寫進網址、也不從網址讀位置：舊版留在瀏覽器歷史／書籤裡的「#緯度,經度」網址一律忽略並清掉，每次打開都是乾淨的畫面
+  if(/^#-?\d+(?:\.\d+)?,-?\d+(?:\.\d+)?$/.test(location.hash)){ try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} }
   const qParam=(new URLSearchParams(location.search).get('q')||'').trim();   // 縣市頁的連結會帶 ?q=縣市名，自動幫忙查詢
-  if(m) start={lat:+m[1],lon:+m[2]};
   try{ localStorage.removeItem('tvant-last'); }catch(e){}   // 不再記住上一次的位置；清掉舊版留在瀏覽器裡的紀錄
   if(start&&isFinite(start.lat)&&isFinite(start.lon)) setMe(start.lat,start.lon,true);
   else { map.fitBounds([[21.8,119.9],[25.4,122.1]]); if(qParam){ $('q').value=qParam; search(); } }
