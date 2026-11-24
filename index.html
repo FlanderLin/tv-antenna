@@ -329,7 +329,6 @@
 
   function setMe(lat,lon,zoomTo){
     me={lat,lon};
-    try{localStorage.setItem('tvant-last',JSON.stringify(me));}catch(e){}
     try{history.replaceState(null,'','#'+lat.toFixed(6)+','+lon.toFixed(6));}catch(e){}
     if(!meMarker){
       meMarker=L.marker([lat,lon],{draggable:true,zIndexOffset:1000,icon:L.divIcon({className:'',html:'<div class="me-pin"></div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(map);
@@ -634,7 +633,7 @@
   const m=location.hash.match(/^#(-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)$/);
   const qParam=(new URLSearchParams(location.search).get('q')||'').trim();   // 縣市頁的連結會帶 ?q=縣市名，自動幫忙查詢
   if(m) start={lat:+m[1],lon:+m[2]};
-  else if(!qParam) { try{ start=JSON.parse(localStorage.getItem('tvant-last')||'null'); }catch(e){} }
+  try{ localStorage.removeItem('tvant-last'); }catch(e){}   // 不再記住上一次的位置；清掉舊版留在瀏覽器裡的紀錄
   if(start&&isFinite(start.lat)&&isFinite(start.lon)) setMe(start.lat,start.lon,true);
   else { map.fitBounds([[21.8,119.9],[25.4,122.1]]); if(qParam){ $('q').value=qParam; search(); } }
   loadGoogle();   // 沒有填金鑰時什麼都不做
